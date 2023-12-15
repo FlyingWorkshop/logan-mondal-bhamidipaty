@@ -1,0 +1,7 @@
+{% assign separator = "&nbsp;&nbsp;/&nbsp;" %}
+
+<p style="text-align:center">
+    {% for contact in site.data.contacts %}
+        <a target="_blank" href="{{ contact.url }}">{{ contact.title }}</a>{% unless forloop.last %}{{ separator }}{% endunless %}
+    {% endfor %}
+</p>
