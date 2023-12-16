@@ -1,3 +1,60 @@
-.current {
-    color: green;
+// Define the main font family variable
+$main-font-family: 'Lato', Verdana, Helvetica, sans-serif;
+
+// colors
+$hover-color: #f09228;
+$link-color: #1772d0;
+
+a {
+  color: $link-color;
+  text-decoration: none;
+  &:focus,
+  &:hover {
+    color: $hover-color;
+    text-decoration: none;
+  }
+}
+
+body,
+td,
+th,
+tr,
+p,
+a {
+  font-family: $main-font-family;
+  font-size: 14px;
+  font-display: auto;
+}
+
+h1 {
+  font-family: $main-font-family;
+  font-size: 29px;
+  font-weight: normal;
+  font-display: auto;
+  text-align: center;
+  padding: 0;
+  margin-block-start: 14px;
+  margin-block-end: 14px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+h2 {
+  font-family: $main-font-family;
+  font-size: 22px;
+  font-display: auto;
+  font-weight: normal;
+  padding: 0;
+  margin: 0;
+  display: inline;
+}
+
+h3 {
+  font-family: $main-font-family;
+  font-size: 14px;
+  font-weight: 700;
+  font-display: auto;
+  padding: 0;
+  margin: 0;
+  display: inline;
 }
