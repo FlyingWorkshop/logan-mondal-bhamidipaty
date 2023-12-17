@@ -18,7 +18,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Logan Mondal Bhamidipaty
+name: Logan Mondal Bhamidipaty
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://flyingworkshop.github.io/logan-mondal-bhamidipaty/" # the base hostname & protocol for your site, e.g. http://example.com
 
