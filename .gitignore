@@ -5,5 +5,8 @@ _site
 .jekyll-metadata
 vendor
 
+# for github-pages compat
+Gemfile.lock
+
 # personal
 notes.md
