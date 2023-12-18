@@ -19,8 +19,9 @@
 # in the templates via {{ site.myvariable }}.
 
 name: Logan Mondal Bhamidipaty
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://flyingworkshop.github.io/logan-mondal-bhamidipaty/" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://flyingworkshop.github.io"
+baseurl: "/logan-mondal-bhamidipaty"
+permalink: /
 
 # Build settings
 # theme: minima
