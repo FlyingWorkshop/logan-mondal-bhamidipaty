@@ -20,14 +20,10 @@
 
 name: Logan Mondal Bhamidipaty
 
-# NOTE: this is for deploying to GitHub
 url: "https://flyingworkshop.github.io"
 baseurl: "/logan-mondal-bhamidipaty"
 permalink: /
 description: "Personal website for Logan Mondal Bhamidipaty."
-# NOTE: this is for testing locally
-# baseurl: "" # the subpath of your site, e.g. /blog
-# url: "https://flyingworkshop.github.io/logan-mondal-bhamidipaty/" # the base hostname & protocol for your site, e.g. http://example.com
 
 # Build settings
 # theme: minima
