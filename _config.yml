@@ -22,6 +22,7 @@ name: Logan Mondal Bhamidipaty
 url: "https://flyingworkshop.github.io"
 baseurl: "/logan-mondal-bhamidipaty"
 permalink: /
+description: "Personal website for Logan Mondal Bhamidipaty."
 
 # Build settings
 # theme: minima
