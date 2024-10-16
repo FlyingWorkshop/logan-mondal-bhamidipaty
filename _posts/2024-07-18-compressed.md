@@ -9,4 +9,4 @@ paper: https://github.com/FlyingWorkshop/logan-mondal-bhamidipaty/blob/b94c628ee
 code: https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl
 website: https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/
 ---
-Description coming soon!
+Belief compression is a technique for planning in large environments with state and outcome uncertainty. CompressedBeliefMDPs.jl, part of the popular POMDPs.jl community, provides a general framework for applying belief compression in large POMDPs and offers a suite of algorithms for sampling, compressing, and solving.
