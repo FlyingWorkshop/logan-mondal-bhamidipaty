@@ -1,6 +1,6 @@
 ---
 title:  "Algorithmic Game Theory Course Reader"
-date:   2023-06-15 11:54:37 -0800
+date:   2024-06-15 11:54:37 -0800
 authors: <strong>Logan Mondal Bhamidipaty*</strong>, Eric Gao*, Aviad Rubinstein*
 category: teaching
 image: /agt.png
