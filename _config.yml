@@ -40,6 +40,7 @@ plugins:
 # their entries' file path in the `include:` list.
 exclude:
   - README.md
+  - notes.md
   - shortcuts.md
   - .sass-cache/
   - .jekyll-cache/
