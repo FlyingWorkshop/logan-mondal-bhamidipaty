@@ -1,11 +1,11 @@
 ---
 title:  "CompressedBeliefMDPs.jl: A Julia Package for Solving Large POMDPs with Belief Compression"
-date:   2024-07-18 11:54:37 -0800
+date:   2025-06-20 11:54:37 -0800
 authors: <strong>Logan Mondal Bhamidipaty</strong>, Mykel J. Kochenderfer
 category: research
 image: /maze.png
-venue: Journal of Open Source Software (JOSS) [In Review]
-paper: assets/pdfs/belief_compression_draft.pdf
+venue: Journal of Open Source Software (JOSS)
+paper: https://joss.theoj.org/papers/10.21105/joss.07346
 code: https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl
 website: https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/
 ---
