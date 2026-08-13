@@ -1,3 +1,925 @@
----
-layout: home
----
+<!DOCTYPE html>
+<!--
+  Logan Mondal Bhamidipaty — single page.
+
+  Conceit: FlyingWorkshop. A pixel-art workshop slung under a balloon.
+  "ascend" pans the camera up one continuous column of sky; the craft holds its
+  place in frame while ground, clouds and stars fall past it at different rates.
+  The craft: a gore-striped balloon over a shingled workshop with a glowing
+  shop window and a side propeller, drawn on the same grid as everything else.
+
+  Everything in the scene is drawn on ONE pixel grid: PX = 2 user units per art
+  pixel, and no sprite, ridge or dither cell is ever off that grid.
+
+  PLACEHOLDERS: the four news lines, and the titles/links for PBRR and RENEW.
+  To use a photo instead of the corner sprite, see the note above <figure>.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logan Mondal Bhamidipaty</title>
+<meta name="description" content="Logan Mondal Bhamidipaty — AI PhD student at the University of Edinburgh, working on reinforcement learning, game theory, and market design.">
+<meta property="og:title" content="Logan Mondal Bhamidipaty">
+<meta property="og:description" content="AI PhD student at the University of Edinburgh. Reinforcement learning, game theory, market design.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/images/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" href="/assets/images/favicon/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700&family=Noto+Serif+SC:wght@400&family=Noto+Sans+SC:wght@300;400&family=IBM+Plex+Sans:wght@300;400&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101420;
+    --bone:#E8E4DA;
+    --accent:#E8A552;
+    --accent-soft:#F6D9A8;
+    --muted:#868C9A;
+    --mincho:"Zen Old Mincho","Noto Serif SC",'Hiragino Mincho ProN',Georgia,serif;
+    --sans:"IBM Plex Sans","Noto Sans SC",'Helvetica Neue',Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--ink);color:var(--bone);
+    font-family:var(--sans);font-weight:300;font-size:17px;line-height:1.8;
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;min-height:100%;overflow-x:hidden;
+  }
+  main{flex:1 0 auto;width:100%;max-width:620px;margin:0 auto;padding:76px 26px 20px;position:relative}
+
+  /* one page, two languages: only the matching copy is rendered */
+  body[data-lang="en"] .t-zh,body[data-lang="zh"] .t-en{display:none}
+  /* CJK wants tight tracking and has no italic tradition */
+  .t-zh{letter-spacing:.04em}
+  h1 .t-zh{letter-spacing:.02em}
+  body[data-lang="zh"] p.body em{font-style:normal;color:#EDE9DF}
+  body[data-lang="zh"] p.body{line-height:1.95}
+  .lang{position:absolute;top:30px;right:26px;background:none;border:0;padding:3px 0;cursor:pointer;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);
+    border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
+  .lang:hover{color:var(--accent-soft);
+    border-color:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
+  @media(min-width:700px){main{padding-top:104px}}
+
+  h1{font-family:var(--mincho);font-weight:400;font-size:clamp(2.1rem,7vw,2.9rem);
+    line-height:1.08;margin:0 0 14px;color:#F5F1E7;letter-spacing:.005em}
+  h1 .zh{color:var(--accent);font-size:.72em;margin-left:.32em;
+    font-family:"Noto Serif SC",var(--mincho);transition:color 1.2s ease}
+
+  /* Swap the sprite for a photo: replace the <svg id="corner"> with
+     <img src="me.jpg" alt="Logan Mondal Bhamidipaty"> — the styles below still apply. */
+  .photo{float:right;width:118px;margin:2px 0 14px 24px;line-height:0}
+  .photo img{width:100%;height:auto;display:block;border-radius:2px;
+    filter:saturate(.9);transition:filter .6s ease}
+  .photo:hover img{filter:none}
+  @media(max-width:520px){.photo{float:none;width:96px;margin:0 0 14px}}
+
+  .seam{width:100%;height:9px;margin:0 0 18px;overflow:visible;display:block}
+  .seam path{fill:none;stroke:var(--accent);stroke-width:1.1;opacity:.9;transition:stroke 1.2s ease;
+    stroke-dasharray:620;stroke-dashoffset:620;animation:draw 1.6s ease-out .3s forwards}
+  .role{font-family:var(--mono);font-size:11.5px;letter-spacing:.15em;
+    color:var(--muted);margin:0 0 32px}
+  p.body{margin:0 0 18px;color:#C4C2BC;max-width:52ch}
+  p.body em{font-style:italic;color:#DEDACF}
+
+  section{margin:34px 0 0;clear:both}
+  section h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:400;color:var(--accent);margin:0 0 12px;transition:color 1.2s ease}
+  section ul{list-style:none;margin:0;padding:0}
+  section li{display:grid;gap:1px 16px;padding:7px 0;font-size:15px;color:#C4C2BC;line-height:1.6}
+  @media(min-width:520px){section li{grid-template-columns:76px 1fr}}
+  section li[hidden]{display:none}
+  .date{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted);
+    padding-top:3px;white-space:nowrap}
+  .venue{color:var(--muted);font-style:italic}
+  .authors{display:block;font-size:13.5px;line-height:1.55;color:#9AA0AC;margin:1px 0 1px}
+  .authors .me{color:#E2DED4}
+  .meta{display:block;font-size:13.5px;color:var(--muted)}
+  .more{margin:8px 0 0;background:none;border:0;padding:0;cursor:pointer;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
+  .more:hover{color:var(--accent-soft);border-color:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
+  .fill{color:var(--accent-soft);transition:color 1.2s ease,border-color 1.2s ease;
+    border-bottom:1px dotted color-mix(in srgb, var(--accent-soft) 55%, transparent)}
+
+  .links{list-style:none;margin:30px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px}
+  a{color:var(--accent-soft);text-decoration:none;font-family:var(--mono);font-size:13px;
+    letter-spacing:.04em;border-bottom:1px solid color-mix(in srgb, var(--accent-soft) 34%, transparent);
+    transition:color 1.2s ease,border-color 1.2s ease}
+  p.body a,section li a{font-size:inherit;font-family:inherit;letter-spacing:0}
+  a:hover{color:#fff;border-color:var(--accent)}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:2px}
+
+  .controls{margin:40px 0 0;display:flex;flex-wrap:wrap;gap:10px}
+  .ascend{
+    display:inline-flex;align-items:center;
+    background:none;border:1px solid color-mix(in srgb, var(--accent-soft) 34%, transparent);color:var(--bone);
+    font-family:var(--mincho);font-size:1rem;letter-spacing:.04em;
+    padding:9px 20px 10px;cursor:pointer;border-radius:2px;
+    transition:border-color 1.2s ease,color 1.2s ease,background .3s ease;
+  }
+  .ascend:hover{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent)}
+  .ascend:active{transform:translateY(1px)}
+  .ascend[disabled]{cursor:default;opacity:.34}
+  .ascend[disabled]:hover{border-color:color-mix(in srgb, var(--accent-soft) 34%, transparent);
+    background:none}
+
+  .caption{text-align:center;font-family:var(--mincho);font-size:15.5px;line-height:1.5;
+    letter-spacing:.01em;color:#A6A9B2;margin:28px 0 12px;padding:0 26px;
+    min-height:0;transition:min-height .6s cubic-bezier(.35,.84,.28,1)}
+  .caption span{transition:opacity .45s ease}
+  .caption .src{display:block;margin-top:5px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.13em;color:var(--muted)}
+  body[data-lang="zh"] .caption{letter-spacing:.06em}
+
+  /* ---- scene ---- */
+  #corner{width:100%;height:auto;display:block;overflow:visible;pointer-events:none}
+  .sky{flex:0 0 auto;width:100%;height:240px;display:block;margin-top:8px;
+    pointer-events:none;content-visibility:auto;contain-intrinsic-size:auto 240px}
+  svg rect,svg polygon,svg use{shape-rendering:crispEdges}
+  .px{transition:fill 1.2s ease}
+  .hill{transition:fill 1.4s ease}
+  .cam{transition:transform 2s cubic-bezier(.34,.85,.28,1)}
+
+  /* balloon leads, shed lags: the rigging reads as a pendulum */
+  .bobA{animation:bob 6.4s ease-in-out infinite alternate}
+  .bobB{animation:bob 6.4s ease-in-out .42s infinite alternate}
+  @keyframes bob{from{transform:translateY(-1px)}to{transform:translateY(1px)}}
+  .tilt{animation:tilt 11s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 12%}
+  @keyframes tilt{from{transform:rotate(-1.6deg)}to{transform:rotate(1.4deg)}}
+
+  .drift{animation:drift 78s linear infinite}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-640px)}}
+  .cd1{animation:clouddrift 96s linear infinite}
+  .cd2{animation:clouddrift 64s linear infinite}
+  .cd3{animation:clouddrift 41s linear infinite}
+  @keyframes clouddrift{from{transform:translateX(0)}to{transform:translateX(-640px)}}
+
+  /* three-frame propeller, flipped rather than squashed */
+  .pf{animation:flip .21s steps(1) infinite}
+  .pf2{animation-delay:.07s}
+  .pf3{animation-delay:.14s}
+  @keyframes flip{0%{opacity:1}33.4%{opacity:0}100%{opacity:0}}
+
+  .puff{animation:puff 3.4s ease-out infinite;transform-box:fill-box}
+  @keyframes puff{
+    0%{opacity:0;transform:translate(0,0) scale(.5)}
+    18%{opacity:.85}
+    100%{opacity:0;transform:translate(var(--shear,4px),-16px) scale(1.8)}
+  }
+  .star{animation:twinkle 3.6s ease-in-out infinite alternate}
+  @keyframes twinkle{0%{opacity:.2}100%{opacity:1}}
+  .glowpulse{animation:glowpulse 5.2s ease-in-out infinite alternate}
+  @keyframes glowpulse{from{opacity:.7}to{opacity:1}}
+  /* every few seconds the burner fires and the envelope glows like a lantern */
+  .burnflare{opacity:0;animation:burnfire 5.5s ease-in-out infinite}
+  @keyframes burnfire{0%,70%,93%,100%{opacity:0}76%,86%{opacity:1}}
+  .glint{opacity:0;animation:glint 4.7s linear 1.2s infinite}
+  @keyframes glint{0%,90%,100%{opacity:0}93%,95%{opacity:.9}}
+  .sparkarm{opacity:0;animation:sparkle 7.3s steps(1) infinite}
+  @keyframes sparkle{0%,90%,100%{opacity:0}93%,97%{opacity:.85}}
+  .firefly{animation:firefly 5.6s ease-in-out infinite alternate}
+  @keyframes firefly{from{opacity:.06}60%{opacity:.14}to{opacity:.95}}
+  /* the window's spill brightens where the sky is darkest */
+  .cone{opacity:.55;transition:opacity 1.2s ease}
+  body[data-band="2"] .cone,body[data-band="3"] .cone{opacity:1}
+  .wingA{animation:flap 1.1s steps(1) infinite}
+  .wingB{animation:flap 1.1s steps(1) .55s infinite}
+  @keyframes flap{0%{opacity:1}50%{opacity:0}100%{opacity:0}}
+  .meteor{animation:meteor var(--mdur,17s) linear var(--mdel,0s) infinite;
+    transform-box:fill-box}
+  @keyframes meteor{
+    0%,90%{opacity:0;transform:translate(0,0)}
+    92%{opacity:.95}
+    96.5%{opacity:.8}
+    98.5%,100%{opacity:0;transform:translate(var(--mx,76px),var(--my,44px))}
+  }
+  .pixel{opacity:0;animation:pop .38s cubic-bezier(.2,1.4,.5,1) var(--d) forwards}
+  @keyframes pop{from{opacity:0;transform:translateY(2px) scale(.4)}to{opacity:1;transform:none}}
+  @keyframes draw{to{stroke-dashoffset:0}}
+
+  /* reduced motion: freeze a composed scene rather than blanking it */
+  @media(prefers-reduced-motion:reduce){
+    .seam path{animation:none;stroke-dashoffset:0}
+    .bobA,.bobB,.tilt,.drift,.cd1,.cd2,.cd3,.star,.wingA,.glowpulse,
+    .burnflare,.glint,.sparkarm,.firefly{animation:none}
+    .pixel{animation:none;opacity:1}
+    .puff{animation:none;opacity:.4}
+    .pf{animation:none;opacity:0}
+    .pf1{opacity:1}
+    .wingB,.meteor{display:none}
+    .cam{transition:none}
+  }
+</style>
+</head>
+<body data-lang="en">
+
+<main>
+  <button class="lang" id="lang" type="button" aria-label="Switch language"><span class="t-en">中文</span><span class="t-zh">English</span></button>
+  <figure class="photo"><svg id="corner" viewBox="0 0 64 86" aria-hidden="true"></svg></figure>
+
+  <h1>Logan Mondal Bhamidipaty<span class="zh t-zh" lang="zh-Hans">罗根</span></h1>
+  <svg class="seam" viewBox="0 0 600 9" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,5 L118,3 L214,7 L342,2 L458,6 L600,4"/>
+  </svg>
+  <p class="role"><span class="t-en" lang="en">AI PhD Student · University of Edinburgh</span><span
+    class="t-zh" lang="zh-Hans">人工智能博士生 · 爱丁堡大学</span></p>
+
+  <p class="body t-en" lang="en">I'm an AI PhD student at the University of Edinburgh, co-advised by
+    <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a> (Edinburgh) and
+    <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a> (Stanford).
+    I'm currently an Anthropic Research Fellow.</p>
+
+  <p class="body t-en" lang="en">Previously, I studied math (BS) and CS/AI (MS) at Stanford where I was
+    fortunate to work with many amazing mentors including
+    <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>,
+    <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a>, and
+    <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a>. I also worked
+    concurrently as an economic consultant with
+    <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> at
+    <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a>.</p>
+
+  <p class="body t-en" lang="en"><em>I'm broadly interested in RL, AI safety, and game theory.</em></p>
+
+  <p class="body t-zh" lang="zh-Hans">我是爱丁堡大学人工智能方向的博士生，由
+    <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a>（爱丁堡）与
+    <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a>（斯坦福）联合指导，目前也是 Anthropic Research Fellow。</p>
+
+  <p class="body t-zh" lang="zh-Hans">此前我在斯坦福取得数学学士与计算机科学／人工智能硕士学位，有幸受教于
+    <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>、
+    <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a> 与
+    <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a> 等多位老师。同期我还在
+    <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a> 担任经济顾问，与
+    <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> 共事。</p>
+
+  <p class="body t-zh" lang="zh-Hans"><em>我的研究兴趣主要在强化学习、人工智能安全与博弈论。</em></p>
+
+  <section>
+    <h2><span class="t-en" lang="en">News</span><span class="t-zh" lang="zh-Hans">近况</span></h2>
+    <ul id="newslist">
+      <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Two workshop papers at RLC 2026 in Montreal.</span><span class="t-zh" lang="zh-Hans">两篇 workshop 论文入选蒙特利尔 RLC 2026。</span></span></li>
+      <li><span class="date"><span class="t-en" lang="en">Jul 2026</span><span class="t-zh" lang="zh-Hans">2026年7月</span></span><span><span class="t-en" lang="en">New preprint: RENEW, on repairing model exploitation from preferences.</span><span class="t-zh" lang="zh-Hans">新预印本：RENEW，用偏好修复世界模型的可利用性。</span></span></li>
+      <li><span class="date"><span class="t-en" lang="en">May 2026</span><span class="t-zh" lang="zh-Hans">2026年5月</span></span><span><span class="t-en" lang="en">New preprint: Imperfect World Models are Exploitable.</span><span class="t-zh" lang="zh-Hans">新预印本：Imperfect World Models are Exploitable。</span></span></li>
+      <li><span class="date"><span class="t-en" lang="en">Sep 2025</span><span class="t-zh" lang="zh-Hans">2025年9月</span></span><span><span class="t-en" lang="en">Started the PhD in Edinburgh.</span><span class="t-zh" lang="zh-Hans">开始在爱丁堡读博。</span></span></li>
+    </ul>
+    <button class="more" id="more" aria-expanded="false" aria-controls="newslist">earlier</button>
+  </section>
+
+  <section>
+    <h2><span class="t-en" lang="en">Research</span><span class="t-zh" lang="zh-Hans">研究</span></h2>
+    <ul>
+      <li><span class="date">2026</span><span>RENEW: towards learning world models and repairing model exploitation from preferences
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer,
+          Subramanian Ramamoorthy</span>
+        <span class="meta"><span class="venue"><span class="t-en" lang="en">Finding the Frame Workshop, RLC</span><span class="t-zh" lang="zh-Hans">Finding the Frame Workshop, RLC</span></span> ·
+        <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a></span></span></li>
+
+      <li><span class="date">2026</span><span>Imperfect world models are exploitable
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
+          David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
+        <span class="meta"><span class="venue"><span class="t-en" lang="en">RL in Big Worlds Workshop, RLC</span><span class="t-zh" lang="zh-Hans">RL in Big Worlds Workshop, RLC</span></span> ·
+        <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a></span></span></li>
+
+      <li><span class="date">2025</span><span>Repairing reward functions with feedback to mitigate reward hacking
+        <span class="authors">Stephane Hatgis-Kessell, <span class="me">Logan Mondal Bhamidipaty</span>,
+          Emma Brunskill</span>
+        <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
+        <a href="https://arxiv.org/abs/2510.13036" rel="noopener">arXiv</a></span></span></li>
+
+      <li><span class="date">2025</span><span>CompressedBeliefMDPs.jl: a Julia package for solving large POMDPs with belief compression
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer</span>
+        <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
+        <a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+        <a href="https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+        <a href="https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+
+      <li><span class="date">2025</span><span>ExpFamilyPCA.jl: a Julia package for exponential family principal component analysis
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer, Trevor Hastie</span>
+        <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
+        <a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+        <a href="https://github.com/sisl/ExpFamilyPCA.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+        <a href="https://sisl.github.io/ExpFamilyPCA.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+
+      <li><span class="date">2024</span><span>Learning to explore in POMDPs with informational rewards
+        <span class="authors">Annie Xie*, <span class="me">Logan Mondal Bhamidipaty</span>*, Evan Zheran Liu,
+          Joey Hong, Sergey Levine, Chelsea Finn</span>
+        <span class="meta"><span class="venue">ICML</span> ·
+        <a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+        <a href="https://logan-mondal-bhamidipaty.com/assets/images/probe_poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+
+      <li><span class="date">2023</span><span>DynaDojo: an extensible platform for scaling analysis in dynamical system identification
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Tommy Bruzzese*, Caryn Tran*,
+          Rami Mrad, Max S. Kanwal</span>
+        <span class="meta"><span class="venue">NeurIPS</span> ·
+        <a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+        <a href="https://github.com/DynaDojo/dynadojo" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+        <a href="https://logan-mondal-bhamidipaty.com/assets/images/dynadojo-poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="t-en" lang="en">Teaching</span><span class="t-zh" lang="zh-Hans">教学</span></h2>
+    <ul>
+      <li><span class="date">2024</span><span>Algorithmic game theory course reader
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Eric Gao*, Aviad Rubinstein*</span>
+        <span class="meta"><a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
+      <li><span class="date">2023</span><span>Market design course reader
+        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Paul Milgrom*, Ellie Morgan Tyger, Lea Nagel</span>
+        <span class="meta"><a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
+    </ul>
+  </section>
+
+  <ul class="links">
+    <li><a href="https://mailhide.io/e/deFdqf4S"><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
+    <li><a href="https://github.com/FlyingWorkshop" rel="me">GitHub</a></li>
+    <li><a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/logan_bhamidipaty_short_cv.pdf"><span class="t-en" lang="en">CV</span><span class="t-zh" lang="zh-Hans">简历</span></a></li>
+    <li><a href="https://scholar.google.com/citations?user=wJ_Eo0sAAAAJ&amp;hl=en"><span class="t-en" lang="en">Scholar</span><span class="t-zh" lang="zh-Hans">学术主页</span></a></li>
+    <li><a href="https://flyingworkshop.github.io/Desmos-Creations/">Desmos</a></li>
+  </ul>
+
+  <div class="controls">
+    <button class="ascend" id="btn" aria-describedby="cap">
+      <span class="t-en" lang="en">ascend</span><span class="t-zh" lang="zh-Hans">上升</span>
+    </button>
+    <button class="ascend" id="btndown" aria-describedby="cap">
+      <span class="t-en" lang="en">descend</span><span class="t-zh" lang="zh-Hans">下降</span>
+    </button>
+  </div>
+</main>
+
+<p class="caption" id="cap" role="status"><span id="captext"></span><span class="src" id="capsrc"></span></p>
+<svg class="sky" id="sky" viewBox="0 0 640 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  var PX=2;                       /* one art pixel = 2 user units, everywhere */
+  var W=640;                      /* world width; the drift loop wraps on it */
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a){e.setAttribute(k,a[k]);}return e;}
+  function use(ref,x,y){
+    var u=el("use",{x:x,y:y});
+    u.setAttribute("href",ref);
+    u.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",ref);
+    return u;
+  }
+  function q(v){return Math.round(v/PX)*PX;}   /* snap to the grid */
+
+  /* ------------------------------------------------------------------ art */
+  /* 0 outline  1 timber dark  2 wall  3 roof/plank  4 balloon shade
+     5 balloon  6 balloon light  7 lit glass  8 cloud  9 rim left
+     A rim right  B rope  C metal                              32 x 43 px  */
+  var CRAFT=[
+    "................................",
+    "............00000000............",
+    "..........906656655400..........",
+    "........996655666644450A........",
+    ".......96665556655444455A.......",
+    "......9666555565554444555A......",
+    ".....966655554555544444555A.....",
+    ".....966655444555544444555A.....",
+    "....95666544455555544445554A....",
+    "....96665444455555544445555A....",
+    "....96654444455555544444555A....",
+    "....95554444455555544444555A....",
+    "....95554444455555544444554A....",
+    "....95554444455555544444544A....",
+    "....95555444455555544444444A....",
+    "....94555444455555544444444A....",
+    ".....055544444555544444444A.....",
+    ".....055544444555544444444A.....",
+    "......05554444555444444440......",
+    ".......055444455444444440.......",
+    "........0054444444444400........",
+    "..........004444444400..........",
+    "...........0444444440...........",
+    "............04444440............",
+    ".............0C77C0.............",
+    ".............BB..BB.............",
+    "............B.B..B.BCC..........",
+    "..........B...B..B..CC..........",
+    ".........B....B..B..CCB.........",
+    "........B.....B..B..CC.B........",
+    ".........03333333333330.........",
+    ".......033333333333333330.......",
+    ".....0333333333333333333330.....",
+    ".......011111111111111110.......",
+    ".......012222222770772210.......",
+    ".......012222213770773210.......",
+    ".......012111122000002210.......",
+    ".......012133123770773210CC.....",
+    ".......012133122770772210.......",
+    ".......01213C121333332210.......",
+    ".......012133122222221210.......",
+    ".......011111111111111110.......",
+    "..........000000000000.........."
+  ];
+  var BALLOON_ROWS=25;            /* rows 0-24 lead, 25-42 swing after them */
+
+  /* S pixels are the sunlit rim: undersides catch the low sun, and keep a
+     pale moonlit edge at night instead of inverting with the body tones */
+  var CLOUDS=[
+    ["..88..",".S888.",".S444."],
+    ["...888....","..88888...",".S88888888","..SS44444."],
+    ["....8888........","..888888888.....",".S888888888888..",
+     "S888888888888888","..SSS444444444.."]
+  ];
+  var BIRD=[["0...0",".000."],[".000.","0...0"]];
+
+  /* ------------------------------------------------------- altitude bands */
+  var SKIES=[
+    {name:"Ground haze",note:"400 m · thermals rising",shift:0,stars:0,shear:"4px",
+     accent:"#E8A552",soft:"#F6D9A8",far:"#5C4E6E",mid:"#3A2F48",near:"#1C1626",
+     pal:{0:"#241A12",1:"#553A22",2:"#8A5C36",3:"#B07A44",4:"#B4703C",5:"#E8A552",
+          6:"#F8DDA8",7:"#FFE9A8",8:"#F2CDA0",9:"#FFF0C4",A:"#7A4526",B:"#3A2A1C",C:"#C9A88A",
+          S:"#FFF0C4"}},
+    {name:"Cloud deck",note:"1,200 m · clear, light chop",shift:150,stars:.12,shear:"7px",
+     accent:"#4FA9D8",soft:"#BFE4F5",far:"#7FA4B8",mid:"#4E7186",near:"#2A414E",
+     pal:{0:"#1A2430",1:"#33454F",2:"#4E6472",3:"#6E8895",4:"#2F7EA8",5:"#4FA9D8",
+          6:"#BFE4F5",7:"#FFF2C4",8:"#FFFFFF",9:"#EAF7FF",A:"#256A90",B:"#22323C",C:"#A9C4D2",
+          S:"#FFFFFF"}},
+    {name:"Thin air",note:"3,000 m · tailwind",shift:300,stars:.5,shear:"11px",
+     accent:"#8E86DE",soft:"#CFC7F5",far:"#3A3358",mid:"#241E3C",near:"#141024",
+     pal:{0:"#171227",1:"#2E2648",2:"#4A3E70",3:"#61538F",4:"#C4BCEE",5:"#8E86DE",
+          6:"#453A7A",7:"#FFD9A0",8:"#B9B2E4",9:"#2A2350",A:"#EDE7FF",B:"#221C38",C:"#9A93C4",
+          S:"#D8D2F4"}},
+    {name:"Stars",note:"9,000 m · no traffic",shift:450,stars:1,shear:"15px",
+     accent:"#7FA6E8",soft:"#C7D9F7",far:"#1E2C48",mid:"#131B2E",near:"#0A0F1A",
+     pal:{0:"#0C1220",1:"#1E2A40",2:"#31415F",3:"#465C86",4:"#9BBAF0",5:"#5C7FBE",
+          6:"#2A3E62",7:"#FFE08A",8:"#9FB4D8",9:"#101828",A:"#EAF2FF",B:"#141B28",C:"#8296B4",
+          S:"#C7D4EE"}}
+  ];
+
+  /* ------------------------------------------------------------ sprites */
+  /* adjacent same-colour pixels merge into one rect: identical on screen,
+     roughly a third of the nodes to paint and recolour */
+  function sprite(art,pal,opt){
+    opt=opt||{};
+    var g=el("g",{}),r,c,h=art.length,r0=opt.from||0,r1=opt.to==null?h:opt.to;
+    for(r=r0;r<r1;r++){
+      var row=art[r];
+      for(c=0;c<row.length;){
+        var ch=row[c];
+        if(ch==="."){c++;continue;}
+        var c0=c;
+        while(c<row.length&&row[c]===ch) c++;
+        var rect=el("rect",{x:c0*PX,y:r*PX,width:(c-c0)*PX,height:PX,
+          fill:pal[ch],"data-k":ch,"class":"px"});
+        if(opt.pop){rect.setAttribute("class","px pixel");
+                    rect.style.setProperty("--d",(0.1+(h-r)*0.02).toFixed(3)+"s");}
+        g.appendChild(rect);
+      }
+    }
+    return g;
+  }
+  function spriteW(art){return art[0].length*PX;}
+
+  function puffs(parent,pal,n){
+    for(var i=0;i<(n||3);i++){
+      var p=el("rect",{x:20*PX,y:25*PX,width:PX,height:PX,fill:pal[8],opacity:0,
+        "data-k":"8","class":"px puff"});
+      p.style.animationDelay=(i*1.13).toFixed(2)+"s";
+      parent.appendChild(p);
+    }
+  }
+
+  /* three propeller frames on the side mount, flipped in sequence.
+     Drawn in the A tone: dark against the pale low clouds, pale against
+     the dark high sky, so the blades stay legible at every altitude */
+  var PROP=[[[27,34],[27,35],[27,36],[27,38],[27,39],[27,40]],
+            [[26,36],[28,36],[27,37],[26,38],[28,38]],
+            [[26,37],[27,37],[28,37]]];
+  function propeller(pal){
+    var g=el("g",{});
+    PROP.forEach(function(frame,i){
+      var f=el("g",{"class":"pf pf"+(i+1)});
+      frame.forEach(function(p){
+        f.appendChild(el("rect",{x:p[0]*PX,y:p[1]*PX,width:PX,height:PX,
+          fill:pal.A,"data-k":"A","class":"px"}));
+      });
+      g.appendChild(f);
+    });
+    /* an occasional specular catch on the spinning disc */
+    g.appendChild(el("rect",{x:27*PX,y:35*PX,width:PX,height:PX,
+      fill:pal[8],"data-k":"8","class":"px glint"}));
+    return g;
+  }
+
+  /* light spilling from the shop window, pooling in the air under the hull */
+  var CONE=[[42,17,21,.09],[43,17,22,.07],[44,18,23,.05],[45,18,24,.04]];
+  function cone(parent,pal){
+    var outer=el("g",{"class":"cone"}),inner=el("g",{"class":"glowpulse"});
+    CONE.forEach(function(rw){
+      for(var x=rw[1];x<=rw[2];x++){
+        if(rw[3]<.06&&((x+rw[0])&1)) continue;
+        inner.appendChild(el("rect",{x:x*PX,y:rw[0]*PX,width:PX,height:PX,
+          fill:pal[7],"data-k":"7","class":"px",opacity:rw[3]}));
+      }
+    });
+    outer.appendChild(inner);
+    parent.appendChild(outer);
+  }
+
+  /* the whole craft, split so the balloon leads and the shed swings after it.
+     Burner and shop window each cast a slow-breathing bloom; every so often
+     the burner fires and lights the envelope from inside like a lantern */
+  function craft(pal,pop){
+    var tilt=el("g",{"class":"tilt"});
+    var a=el("g",{"class":"bobA"});
+    var ga=el("g",{"class":"glowpulse"});
+    halo(ga,15*PX,24*PX,4,pal[7],"7");
+    a.appendChild(ga);
+    a.appendChild(sprite(CRAFT,pal,{to:BALLOON_ROWS,pop:pop}));
+    var fl=el("g",{"class":"burnflare"});
+    halo(fl,15*PX,19*PX,5,pal[7],"7",2);
+    halo(fl,15*PX,24*PX,3,pal[7],"7",2);
+    fl.appendChild(el("rect",{x:15*PX,y:22*PX,width:2*PX,height:2*PX,
+      fill:pal[7],"data-k":"7","class":"px"}));   /* the flame jet itself */
+    a.appendChild(fl);
+    var b=el("g",{"class":"bobB"});
+    var gb=el("g",{"class":"glowpulse"});
+    halo(gb,18*PX,36*PX,6,pal[7],"7");
+    b.appendChild(gb);
+    b.appendChild(sprite(CRAFT,pal,{from:BALLOON_ROWS,pop:pop}));
+    cone(b,pal);
+    b.appendChild(propeller(pal));
+    puffs(b,pal);
+    tilt.appendChild(a);tilt.appendChild(b);
+    return tilt;
+  }
+
+  /* --------------------------------------------------------------- terrain */
+  /* heights are in world units, quantised to the pixel grid, one entry per
+     art column across the 400-unit view */
+  var COLS=W/PX;
+  function ridge(base,amp,phase){
+    var h=[],i;
+    for(i=0;i<COLS;i++)
+      h.push(q(base+Math.sin(i*0.09+phase)*amp+Math.sin(i*0.21+phase)*amp*0.6));
+    return h;
+  }
+  /* Arthur's Seat, the castle rock, then the Old Town falling away down the
+     Royal Mile: a skyline rather than a sine wave */
+  function edinburgh(){
+    var pts=[[0,152],[12,150],[24,146],[38,140],[52,132],[64,124],[74,120],[84,122],
+             [96,130],[112,140],[128,146],[146,148],[162,150],[178,150],[181,138],
+             [184,131],[188,130],[212,130],[214,142],[220,140],[226,143],[232,139],
+             [238,143],[244,140],[250,144],[256,142],[262,146],[268,145],[274,148],
+             [280,147],[288,150],[300,151],[320,152]];
+    var h=[],i,k=0;
+    for(i=0;i<COLS;i++){
+      while(k<pts.length-2&&pts[k+1][0]<=i) k++;
+      var a=pts[k],b=pts[k+1],t=(i-a[0])/(b[0]-a[0]);
+      h.push(q(a[1]+(b[1]-a[1])*Math.max(0,Math.min(1,t))));
+    }
+    function block(x0,x1,top){for(var x=x0;x<=x1&&x<COLS;x++) h[x]=Math.min(h[x],q(top));}
+    block(190,204,118);                       /* keep */
+    block(206,211,112);                       /* tower */
+    [190,194,198,202].forEach(function(x){block(x,x,114);});    /* battlements */
+    [222,235,248,258].forEach(function(x){block(x,x,h[x]-4);}); /* tenement chimneys */
+    block(262,264,136); block(263,263,130);   /* St Giles' crown steeple */
+    block(261,261,133); block(265,265,133);
+    return h;
+  }
+  function staircase(h){
+    var p="-40,200 ",i;
+    for(i=0;i<COLS;i++) p+=(i*PX)+","+h[i]+" "+((i+1)*PX)+","+h[i]+" ";
+    return p+(W+40)+",200";
+  }
+
+  /* ------------------------------------------------------ dithered sky */
+  var BANDS=[[-480,"#04060E"],[-400,"#070C1A"],[-330,"#0C1428"],[-260,"#121F42"],
+             [-190,"#1D3160"],[-120,"#2E5288"],[-50,"#4E82B2"],[20,"#8CB8D4"],
+             [90,"#E2B279"],[170,null]];
+  var BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  var STEPS=[0.85,0.68,0.5,0.32,0.15];    /* one 4x4 tile tall per step */
+
+  function skyColumn(defs,parent){
+    var i,j;
+    for(i=0;i<BANDS.length-1;i++){
+      var y0=BANDS[i][0],y1=BANDS[i+1][0];
+      parent.appendChild(el("rect",{x:-40,y:y0,width:W+80,height:y1-y0,fill:BANDS[i][1]}));
+    }
+    /* fade each band into the one below it: a Bayer ramp, one tile per step */
+    for(i=0;i<BANDS.length-2;i++){
+      var edge=BANDS[i+1][0],col=BANDS[i][1];
+      STEPS.forEach(function(dens,d){
+        var id="dz"+i+"_"+d;
+        var pat=el("pattern",{id:id,patternUnits:"userSpaceOnUse",width:4*PX,height:4*PX});
+        for(var r=0;r<4;r++) for(var c=0;c<4;c++){
+          if(BAYER[r][c] < dens*16)
+            pat.appendChild(el("rect",{x:c*PX,y:r*PX,width:PX,height:PX,fill:col}));
+        }
+        defs.appendChild(pat);
+        parent.appendChild(el("rect",{x:-40,y:edge+d*4*PX,width:W+80,height:4*PX,
+          fill:"url(#"+id+")"}));
+      });
+    }
+  }
+
+  /* tones are [core, mid, rim]; dir shades one shoulder for a lit-from-the-side moon */
+  function disc(parent,cx,cy,r,tones,dir){
+    for(var y=-r;y<=r;y++) for(var x=-r;x<=r;x++){
+      var d=Math.sqrt(x*x+y*y);
+      if(d>r+0.4) continue;
+      var t;
+      if(d>r-1.1) t=tones[2];
+      else if(dir&&(x*dir+y*0.6)<-r*0.15) t=tones[1];
+      else t=d>r*0.55?tones[1]:tones[0];
+      parent.appendChild(el("rect",{x:cx+x*PX,y:cy+y*PX,width:PX,height:PX,fill:t}));
+    }
+  }
+
+  /* quantised light bloom, the closest pixel land gets to a shader: three
+     opacity bands on the art grid, the outermost checkered so the light
+     dissolves into the sky instead of ringing. Same-band runs merge into
+     one rect; boost scales the whole bloom up (the burner firing) */
+  function halo(parent,cx,cy,r,color,dataK,boost){
+    boost=boost||1;
+    function band(x,y){
+      var d=Math.sqrt(x*x+y*y);
+      if(d>r) return 0;
+      if(d>r*0.72) return ((x+y)&1)?0:.05*boost;
+      return (d>r*0.45?.08:.14)*boost;
+    }
+    for(var y=-r;y<=r;y++){
+      for(var x=-r;x<=r;){
+        var o=band(x,y);
+        if(!o){x++;continue;}
+        var x0=x;
+        while(x<=r&&band(x,y)===o) x++;
+        var rect=el("rect",{x:cx+x0*PX,y:cy+y*PX,width:(x-x0)*PX,height:PX,
+          fill:color,opacity:o.toFixed(3)});
+        if(dataK){rect.setAttribute("data-k",dataK);rect.setAttribute("class","px");}
+        parent.appendChild(rect);
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------- build */
+  var corner=document.getElementById("corner"),
+      sky=document.getElementById("sky"),captext=document.getElementById("captext"),
+      capsrc=document.getElementById("capsrc"),
+      btn=document.getElementById("btn"),btndown=document.getElementById("btndown");
+  var starG,hills=[],cams=[],craftDefs=null,idx=0,flying=false;
+
+  function cam(factor){
+    var g=el("g",{"class":"cam"});
+    g.setAttribute("data-f",factor);
+    cams.push(g);sky.appendChild(g);
+    return g;
+  }
+
+  function build(sc){
+    /* header corner */
+    corner.appendChild(craft(sc.pal));
+
+    var defs=el("defs",{});
+    sky.appendChild(defs);
+
+    /* --- back to front. cam layers are appended in draw order. --- */
+
+    /* atmosphere: sky column, sun, moon, stars, the rare meteor */
+    var air=cam(1);
+    skyColumn(defs,air);
+    halo(air,64,q(104),11,"#F6B85E");
+    /* crepuscular rays: dithered shafts climbing away from the low sun */
+    function ray(dx,dy,n){
+      for(var i=7;i<n;i++){
+        var x=q(64+dx*i*2),y=q(104+dy*i*2);
+        if(((x+y)/PX)%2) continue;
+        air.appendChild(el("rect",{x:x,y:y,width:PX,height:PX,
+          fill:"#F6B85E",opacity:i<n*0.45?.07:.045}));
+        if(i<n*0.45)
+          air.appendChild(el("rect",{x:x,y:y+PX,width:PX,height:PX,
+            fill:"#F6B85E",opacity:.04}));
+      }
+    }
+    ray(2.8,-0.9,60);ray(2.1,-1.5,56);ray(1.0,-2.3,48);
+    disc(air,64,q(104),5,["#FFE3A0","#F6B85E","#E08A34"]);     /* low sun */
+    halo(air,470,q(-424),8,"#C3CFE8");
+    disc(air,470,q(-424),4,["#EDF3FF","#93A2C4","#C3CFE8"],1);  /* moon */
+
+    starG=el("g",{opacity:sc.stars});
+    starG.style.transition="opacity 1.8s ease";
+    for(var i=0;i<78;i++){
+      var big=(i%11===0),s=big?PX*2:PX;
+      var X=q((i*61)%(W+40)-20),Y=q(-476+(i*47)%336);
+      var st=el("rect",{x:X,y:Y,width:s,height:s,
+        fill:big?"#FFFFFF":"#CCD8F0","class":"star"});
+      st.style.animationDelay=((i%9)*0.4).toFixed(1)+"s";
+      starG.appendChild(st);
+      if(big)                        /* hero stars flash 4-point arms */
+        [[-PX,0],[s,0],[0,-PX],[0,s]].forEach(function(o){
+          var arm=el("rect",{x:X+o[0],y:Y+o[1],width:PX,height:PX,
+            fill:"#FFFFFF","class":"sparkarm"});
+          arm.style.animationDelay=(((i%9)*0.4)+(i%4)*1.8).toFixed(1)+"s";
+          starG.appendChild(arm);
+        });
+    }
+    air.appendChild(starG);
+
+    /* meteors: a bright head leading its fading tail. Three spawn points on
+       offset prime-length cycles, so they feel unscheduled */
+    function meteor(hx,hy,vx,vy,dur,del){
+      var g=el("g",{"class":"meteor"}),L=Math.sqrt(vx*vx+vy*vy),
+          ux=vx/L,uy=vy/L,m;
+      g.style.setProperty("--mx",vx+"px");
+      g.style.setProperty("--my",vy+"px");
+      g.style.animationDuration=dur+"s";
+      g.style.animationDelay=del+"s";
+      g.appendChild(el("rect",{x:hx-PX,y:hy-PX,width:PX*4,height:PX*4,
+        fill:"#FFFFFF",opacity:.12}));                        /* head aura */
+      g.appendChild(el("rect",{x:hx,y:hy,width:PX*2,height:PX*2,fill:"#FFFFFF"}));
+      for(m=1;m<8;m++)
+        g.appendChild(el("rect",{x:q(hx-ux*(m+1)*PX),y:q(hy-uy*(m+1)*PX),
+          width:PX,height:PX,fill:"#FFFFFF",opacity:(0.8-m*0.1).toFixed(2)}));
+      air.appendChild(g);
+    }
+    meteor(110,q(-452),76,44,19,0);
+    meteor(430,q(-320),64,52,23,8);
+    meteor(300,q(-396),88,34,29,14);
+
+    /* clouds: one sprite per size in defs, reused by every instance */
+    CLOUDS.forEach(function(art,n){
+      var g=sprite(art,sc.pal);
+      g.setAttribute("id","cl"+n);
+      defs.appendChild(g);
+    });
+    var deck=[{n:0,f:1.0,o:.34,cls:"cd1",step:113,y0:132,dy:-44},
+              {n:1,f:1.08,o:.5,cls:"cd2",step:149,y0:112,dy:-52},
+              {n:2,f:1.2,o:.68,cls:"cd3",step:197,y0:96,dy:-58}];
+    function clouds(d){
+      var layer=cam(d.f),run=el("g",{"class":d.cls,opacity:d.o});
+      for(var k=0;k<7;k++){
+        var y=d.y0+k*d.dy;
+        if(y<-300) break;
+        [0,W].forEach(function(off){
+          run.appendChild(use("#cl"+d.n,q((k*d.step)%(W-40))+off,q(y)));
+        });
+      }
+      layer.appendChild(run);
+    }
+
+    var H1=ridge(128,7,0),H2=ridge(140,5,2.1),EDH=edinburgh();
+    hills.push(el("polygon",{points:staircase(H1),fill:sc.far,"class":"hill"}));
+    hills.push(el("polygon",{points:staircase(H2),fill:sc.mid,"class":"hill"}));
+    hills.push(el("polygon",{points:staircase(EDH),fill:sc.near,"class":"hill"}));
+
+    /* a checkered pale crest on the far ridges: cheap atmospheric scatter */
+    function hazeline(parent,h){
+      for(var i=0;i<COLS;i+=2)
+        parent.appendChild(el("rect",{x:i*PX,y:h[i],width:PX,height:PX,
+          fill:"#EAF2FF",opacity:.06}));
+    }
+
+    clouds(deck[0]);                         /* distant cloud, behind the hills */
+    var far=cam(0.88);far.appendChild(hills[0]);hazeline(far,H1);
+    var mid=cam(0.95);mid.appendChild(hills[1]);hazeline(mid,H2);
+    clouds(deck[1]);                         /* nearer cloud, in front of them */
+
+    /* birds, low altitude only */
+    var birdCam=cam(1.12),birds=el("g",{"class":"cd2"});
+    [[92,96],[118,104],[180,88],[300,100],[420,92],[528,106],[596,98]].forEach(function(p,i){
+      [0,W].forEach(function(off){
+        var g=el("g",{transform:"translate("+(q(p[0])+off)+","+q(p[1])+")"});
+        var f1=sprite(BIRD[0],sc.pal);f1.setAttribute("class","wingA");
+        var f2=sprite(BIRD[1],sc.pal);f2.setAttribute("class","wingB");
+        f1.style.animationDelay=(i*0.17)+"s";f2.style.animationDelay=(i*0.17+0.55)+"s";
+        g.appendChild(f1);g.appendChild(f2);birds.appendChild(g);
+      });
+    });
+    birdCam.appendChild(birds);
+
+    /* fireflies over the park, low altitude only */
+    var ffCam=cam(1.06);
+    [[88,134],[142,138],[386,130],[502,140],[598,134]].forEach(function(p,i){
+      var f=el("rect",{x:q(p[0]),y:q(p[1]),width:PX,height:PX,
+        fill:"#FFD98A",opacity:.6,"class":"firefly"});
+      f.style.animationDelay=(i*1.3).toFixed(1)+"s";
+      ffCam.appendChild(f);
+    });
+
+    clouds(deck[2]);                         /* nearest cloud, fastest drift */
+
+    /* the craft: defined once, placed twice so the drift loops seamlessly */
+    craftDefs=craft(sc.pal,true);
+    craftDefs.setAttribute("id","craft");
+    defs.appendChild(craftDefs);
+    var lane=el("g",{"class":"drift"});
+    [0,W].forEach(function(off){ lane.appendChild(use("#craft",296+off,24)); });
+    sky.appendChild(lane);
+
+    /* skyline sits in front of everything, a few windows lit in the castle
+       and down the Old Town: steady, small, distant */
+    var front=cam(1.02);
+    front.appendChild(hills[2]);
+    [[193,4],[201,6],[209,3],[216,3],[223,4],[231,3],[240,3],[247,4],
+     [255,3],[268,3],[277,2]].forEach(function(p){
+      front.appendChild(el("rect",{x:p[0]*PX,y:EDH[p[0]]+p[1]*PX,
+        width:PX,height:PX,fill:sc.pal[7],"data-k":"7","class":"px",opacity:.9}));
+    });
+  }
+
+  function show(i){
+    var sc=SKIES[i];
+    document.body.setAttribute("data-band",i);
+    document.documentElement.style.setProperty("--accent",sc.accent);
+    document.documentElement.style.setProperty("--accent-soft",sc.soft);
+
+    cams.forEach(function(g){
+      g.style.transform="translateY("+(sc.shift*parseFloat(g.getAttribute("data-f"))).toFixed(1)+"px)";
+    });
+    hills[0].setAttribute("fill",sc.far);
+    hills[1].setAttribute("fill",sc.mid);
+    hills[2].setAttribute("fill",sc.near);
+    starG.setAttribute("opacity",sc.stars);
+    if(craftDefs) craftDefs.style.setProperty("--shear",sc.shear);
+    corner.style.setProperty("--shear",sc.shear);
+
+    [].forEach.call(document.querySelectorAll("[data-k]"),function(r){
+      r.setAttribute("fill",sc.pal[r.getAttribute("data-k")]);
+    });
+
+    summit = (i===SKIES.length-1) ? pickVerse() : null;
+    captext.style.opacity=0;capsrc.style.opacity=0;
+    setTimeout(function(){caption();captext.style.opacity=1;capsrc.style.opacity=1;},260);
+  }
+
+  /* the top is a summit, not a loop: you can only go back down from it */
+  function syncButtons(){
+    function set(el,off){ if(off) el.setAttribute("disabled",""); else el.removeAttribute("disabled"); }
+    set(btn, flying||idx>=SKIES.length-1);
+    set(btndown, flying||idx<=0);
+  }
+  function fly(step){
+    var next=Math.min(SKIES.length-1,Math.max(0,idx+step));
+    if(flying||next===idx) return;
+    idx=next;flying=true;syncButtons();show(idx);
+    setTimeout(function(){flying=false;syncButtons();},2000);
+  }
+  btn.addEventListener("click",function(){fly(1);});
+  btndown.addEventListener("click",function(){fly(-1);});
+
+  /* the reward for reaching the top: a different line each climb.
+     All public domain — check the date before adding to this list. */
+  var VERSE=[
+    ["Look'd up in perfect silence at the stars","Whitman, When I Heard the Learn'd Astronomer"],
+    ["Like the lark at break of day arising","Shakespeare, Sonnet 29"],
+    ["Above the smoke and stir of this dim spot","Milton, Comus"],
+    ["Higher still and higher, from the earth thou springest","Shelley, To a Skylark"],
+    ["Alone in the night on a dark hill","Sara Teasdale, Stars"],
+    ["Ah, Moon — and Star! You are very far","Emily Dickinson"],
+    ["We on thy pinions can surpass the wind","Phillis Wheatley, On Imagination"],
+    ["The stars are not afraid to appear like fireflies","Tagore, Stray Birds"],
+    ["Is the moon tired? she looks so pale","Christina Rossetti, Sing-Song"]
+  ];
+  var summit=null,lastVerse=-1;
+  function pickVerse(){
+    var i;
+    do{ i=Math.floor(Math.random()*VERSE.length); } while(VERSE.length>1&&i===lastVerse);
+    lastVerse=i;return VERSE[i];
+  }
+
+  /* ------------------------------------------------------------ language */
+  var LANG=(navigator.language||"en").slice(0,2)==="zh"?"zh":"en";
+  var MORE={en:{open:"less",shut:"earlier"},zh:{open:"收起",shut:"更早"}};
+  /* the same line in either language: a citation, not a translation */
+  function caption(){
+    captext.textContent=summit?summit[0]:"";
+    capsrc.textContent =summit?summit[1]:"";
+    /* the band only opens when there is a line, so lower levels leave no gap */
+    document.getElementById("cap").style.minHeight = summit ? "46px" : "0px";
+  }
+  function applyLang(){
+    document.body.setAttribute("data-lang",LANG);
+    document.documentElement.setAttribute("lang",LANG==="zh"?"zh-Hans":"en");
+    caption();
+    syncNews();
+  }
+  document.getElementById("lang").addEventListener("click",function(){
+    LANG=LANG==="zh"?"en":"zh";applyLang();
+  });
+
+  /* news: one screen by default, older lines on request */
+  var SHOWN=3,items=[].slice.call(document.querySelectorAll("#newslist li")),
+      more=document.getElementById("more"),open=false;
+  function syncNews(){
+    items.forEach(function(li,i){ if(i>=SHOWN&&!open) li.setAttribute("hidden",""); else li.removeAttribute("hidden"); });
+    more.textContent=open?MORE[LANG].open:MORE[LANG].shut;
+    more.setAttribute("aria-expanded",open?"true":"false");
+  }
+  if(items.length>SHOWN){ syncNews(); more.addEventListener("click",function(){open=!open;syncNews();}); }
+  else{ more.style.display="none"; }
+
+  build(SKIES[0]);
+  show(0);
+  applyLang();
+  syncButtons();
+})();
+</script>
+</body>
+</html>
