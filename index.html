@@ -139,18 +139,11 @@
 
   /* ---- scene ---- */
   #corner{width:100%;height:auto;display:block;overflow:visible;pointer-events:none}
-  /* the scene is a 640-unit panorama: let it grow to 2.5x (1600px wide,
-     400px tall) and no further, so the full composition stays in frame
-     without the sky ballooning on big monitors. fitSky() snaps the scale
-     so one art pixel is always a whole number of CSS pixels. */
-  .sky{flex:0 0 auto;width:100%;max-width:1600px;margin:8px auto 0;
-    height:max(240px,min(25vw,400px));display:block;
+  /* one art pixel = 3 CSS px, always. The strip runs edge to edge at a
+     fixed height; on wide screens the WORLD gets wider (procedural hills,
+     clouds and stars extend the panorama), not the pixels bigger. */
+  .sky{flex:0 0 auto;width:100%;height:240px;display:block;margin-top:8px;
     pointer-events:none;content-visibility:auto;contain-intrinsic-size:auto 240px}
-  /* wider than the scene: fade its edges into the page instead of cutting */
-  @media(min-width:1620px){
-    .sky{-webkit-mask-image:linear-gradient(90deg,transparent,#000 70px,#000 calc(100% - 70px),transparent);
-         mask-image:linear-gradient(90deg,transparent,#000 70px,#000 calc(100% - 70px),transparent)}
-  }
   svg rect,svg polygon,svg use{shape-rendering:crispEdges}
   .px{transition:fill 1.2s ease}
   .hill{transition:fill 1.4s ease}
@@ -163,12 +156,14 @@
   .tilt{animation:tilt 11s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 12%}
   @keyframes tilt{from{transform:rotate(-1.6deg)}to{transform:rotate(1.4deg)}}
 
+  /* distance and duration are set per-world-width in JS so the drift
+     SPEED stays constant however wide the panorama is */
   .drift{animation:drift 78s linear infinite}
-  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-640px)}}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(var(--drift,-640px))}}
   .cd1{animation:clouddrift 96s linear infinite}
   .cd2{animation:clouddrift 64s linear infinite}
   .cd3{animation:clouddrift 41s linear infinite}
-  @keyframes clouddrift{from{transform:translateX(0)}to{transform:translateX(-640px)}}
+  @keyframes clouddrift{from{transform:translateX(0)}to{transform:translateX(var(--drift,-640px))}}
 
   /* three-frame propeller, flipped rather than squashed */
   .pf{animation:flip .21s steps(1) infinite}
@@ -369,7 +364,15 @@
 (function(){
   var NS="http://www.w3.org/2000/svg";
   var PX=2;                       /* one art pixel = 2 user units, everywhere */
-  var W=640;                      /* world width; the drift loop wraps on it */
+  /* world width: wide enough that this monitor never scales past 1.5 user
+     units per CSS px (3 px per art pixel). The 640-unit Edinburgh
+     composition sits centred at XOFF; the wings are procedural. */
+  var W=(function(){
+    var px=Math.max((window.screen&&screen.width)||0,innerWidth||0,960);
+    return Math.max(640,Math.ceil(Math.ceil(px/1.5)/320)*320);
+  })();
+  var XOFF=(W-640)/2;             /* where the original composition starts */
+  var K=W/640;                    /* how much more world there is */
   function el(n,a){var e=document.createElementNS(NS,n);for(var k in a){e.setAttribute(k,a[k]);}return e;}
   function use(ref,x,y){
     var u=el("use",{x:x,y:y});
@@ -573,24 +576,28 @@
     return h;
   }
   /* Arthur's Seat, the castle rock, then the Old Town falling away down the
-     Royal Mile: a skyline rather than a sine wave */
+     Royal Mile: a skyline rather than a sine wave. The whole profile is
+     shifted by EDOFF so it stays centred however wide the world is; the
+     flat 152 baseline continues into the procedural wings. */
+  var EDOFF=XOFF/PX;
   function edinburgh(){
     var pts=[[0,152],[12,150],[24,146],[38,140],[52,132],[64,124],[74,120],[84,122],
              [96,130],[112,140],[128,146],[146,148],[162,150],[178,150],[181,138],
              [184,131],[188,130],[212,130],[214,142],[220,140],[226,143],[232,139],
              [238,143],[244,140],[250,144],[256,142],[262,146],[268,145],[274,148],
-             [280,147],[288,150],[300,151],[320,152]];
+             [280,147],[288,150],[300,151],[320,152]].map(function(p){
+               return [p[0]+EDOFF,p[1]];});
     var h=[],i,k=0;
     for(i=0;i<COLS;i++){
       while(k<pts.length-2&&pts[k+1][0]<=i) k++;
       var a=pts[k],b=pts[k+1],t=(i-a[0])/(b[0]-a[0]);
       h.push(q(a[1]+(b[1]-a[1])*Math.max(0,Math.min(1,t))));
     }
-    function block(x0,x1,top){for(var x=x0;x<=x1&&x<COLS;x++) h[x]=Math.min(h[x],q(top));}
+    function block(x0,x1,top){for(var x=x0+EDOFF;x<=x1+EDOFF&&x<COLS;x++) h[x]=Math.min(h[x],q(top));}
     block(190,204,118);                       /* keep */
     block(206,211,112);                       /* tower */
     [190,194,198,202].forEach(function(x){block(x,x,114);});    /* battlements */
-    [222,235,248,258].forEach(function(x){block(x,x,h[x]-4);}); /* tenement chimneys */
+    [222,235,248,258].forEach(function(x){block(x,x,h[x+EDOFF]-4);}); /* tenement chimneys */
     block(262,264,136); block(263,263,130);   /* St Giles' crown steeple */
     block(261,261,133); block(265,265,133);
     return h;
@@ -688,6 +695,8 @@
     /* header corner */
     corner.appendChild(craft(sc.pal));
 
+    sky.setAttribute("viewBox","0 0 "+W+" 160");
+    sky.style.setProperty("--drift",(-W)+"px");
     var defs=el("defs",{});
     sky.appendChild(defs);
 
@@ -696,11 +705,12 @@
     /* atmosphere: sky column, sun, moon, stars, the rare meteor */
     var air=cam(1);
     skyColumn(defs,air);
-    halo(air,64,q(104),11,"#F6B85E");
+    var SUNX=q(64+XOFF),MOONX=q(470+XOFF);
+    halo(air,SUNX,q(104),11,"#F6B85E");
     /* crepuscular rays: dithered shafts climbing away from the low sun */
     function ray(dx,dy,n){
       for(var i=7;i<n;i++){
-        var x=q(64+dx*i*2),y=q(104+dy*i*2);
+        var x=q(SUNX+dx*i*2),y=q(104+dy*i*2);
         if(((x+y)/PX)%2) continue;
         air.appendChild(el("rect",{x:x,y:y,width:PX,height:PX,
           fill:"#F6B85E",opacity:i<n*0.45?.07:.045}));
@@ -710,13 +720,14 @@
       }
     }
     ray(2.8,-0.9,60);ray(2.1,-1.5,56);ray(1.0,-2.3,48);
-    disc(air,64,q(104),5,["#FFE3A0","#F6B85E","#E08A34"]);     /* low sun */
-    halo(air,470,q(-424),8,"#C3CFE8");
-    disc(air,470,q(-424),4,["#EDF3FF","#93A2C4","#C3CFE8"],1);  /* moon */
+    disc(air,SUNX,q(104),5,["#FFE3A0","#F6B85E","#E08A34"]);   /* low sun */
+    halo(air,MOONX,q(-424),8,"#C3CFE8");
+    disc(air,MOONX,q(-424),4,["#EDF3FF","#93A2C4","#C3CFE8"],1); /* moon */
 
     starG=el("g",{opacity:sc.stars});
     starG.style.transition="opacity 1.8s ease";
-    for(var i=0;i<78;i++){
+    var NSTARS=Math.round(78*K);
+    for(var i=0;i<NSTARS;i++){
       var big=(i%11===0),s=big?PX*2:PX;
       var X=q((i*61)%(W+40)-20),Y=q(-476+(i*47)%336);
       var st=el("rect",{x:X,y:Y,width:s,height:s,
@@ -750,9 +761,9 @@
           width:PX,height:PX,fill:"#FFFFFF",opacity:(0.8-m*0.1).toFixed(2)}));
       air.appendChild(g);
     }
-    meteor(110,q(-452),76,44,19,0);
-    meteor(430,q(-320),64,52,23,8);
-    meteor(300,q(-396),88,34,29,14);
+    meteor(q(110+XOFF),q(-452),76,44,19,0);
+    meteor(q(430+XOFF),q(-320),64,52,23,8);
+    meteor(q(300+XOFF),q(-396),88,34,29,14);
 
     /* clouds: one sprite per size in defs, reused by every instance */
     CLOUDS.forEach(function(art,n){
@@ -765,9 +776,9 @@
               {n:2,f:1.2,o:.68,cls:"cd3",step:197,y0:96,dy:-58}];
     function clouds(d){
       var layer=cam(d.f),run=el("g",{"class":d.cls,opacity:d.o});
-      for(var k=0;k<7;k++){
-        var y=d.y0+k*d.dy;
-        if(y<-300) break;
+      run.style.animationDuration=(({cd1:96,cd2:64,cd3:41})[d.cls]*K)+"s";
+      for(var k=0;k<Math.ceil(7*K);k++){
+        var y=d.y0+(k%7)*d.dy;
         [0,W].forEach(function(off){
           run.appendChild(use("#cl"+d.n,q((k*d.step)%(W-40))+off,q(y)));
         });
@@ -794,9 +805,10 @@
 
     /* birds, low altitude only */
     var birdCam=cam(1.12),birds=el("g",{"class":"cd2"});
+    birds.style.animationDuration=(64*K)+"s";
     [[92,96],[118,104],[180,88],[300,100],[420,92],[528,106],[596,98]].forEach(function(p,i){
       [0,W].forEach(function(off){
-        var g=el("g",{transform:"translate("+(q(p[0])+off)+","+q(p[1])+")"});
+        var g=el("g",{transform:"translate("+(q(p[0]+XOFF)+off)+","+q(p[1])+")"});
         var f1=sprite(BIRD[0],sc.pal);f1.setAttribute("class","wingA");
         var f2=sprite(BIRD[1],sc.pal);f2.setAttribute("class","wingB");
         f1.style.animationDelay=(i*0.17)+"s";f2.style.animationDelay=(i*0.17+0.55)+"s";
@@ -808,7 +820,7 @@
     /* fireflies over the park, low altitude only */
     var ffCam=cam(1.06);
     [[88,134],[142,138],[386,130],[502,140],[598,134]].forEach(function(p,i){
-      var f=el("rect",{x:q(p[0]),y:q(p[1]),width:PX,height:PX,
+      var f=el("rect",{x:q(p[0]+XOFF),y:q(p[1]),width:PX,height:PX,
         fill:"#FFD98A",opacity:.6,"class":"firefly"});
       f.style.animationDelay=(i*1.3).toFixed(1)+"s";
       ffCam.appendChild(f);
@@ -821,7 +833,8 @@
     craftDefs.setAttribute("id","craft");
     defs.appendChild(craftDefs);
     var lane=el("g",{"class":"drift"});
-    [0,W].forEach(function(off){ lane.appendChild(use("#craft",296+off,24)); });
+    lane.style.animationDuration=(78*K)+"s";
+    [0,W].forEach(function(off){ lane.appendChild(use("#craft",296+XOFF+off,24)); });
     sky.appendChild(lane);
 
     /* skyline sits in front of everything, a few windows lit in the castle
@@ -830,7 +843,8 @@
     front.appendChild(hills[2]);
     [[193,4],[201,6],[209,3],[216,3],[223,4],[231,3],[240,3],[247,4],
      [255,3],[268,3],[277,2]].forEach(function(p){
-      front.appendChild(el("rect",{x:p[0]*PX,y:EDH[p[0]]+p[1]*PX,
+      var c=p[0]+EDOFF;
+      front.appendChild(el("rect",{x:c*PX,y:EDH[c]+p[1]*PX,
         width:PX,height:PX,fill:sc.pal[7],"data-k":"7","class":"px",opacity:.9}));
     });
   }
@@ -926,20 +940,10 @@
   if(items.length>SHOWN){ syncNews(); more.addEventListener("click",function(){open=!open;syncNews();}); }
   else{ more.style.display="none"; }
 
-  /* snap the sky so one art pixel is a whole number of CSS pixels (the
-     dither shimmers at fractional scales) and the full scene height fits */
-  function fitSky(){
-    var w=sky.getBoundingClientRect().width||innerWidth;
-    var s=Math.max(1.5,Math.ceil(w/320)/2),h=(160*s)+"px";
-    if(sky.style.height!==h) sky.style.height=h;
-  }
-  addEventListener("resize",fitSky);
-
   build(SKIES[0]);
   show(0);
   applyLang();
   syncButtons();
-  fitSky();
 })();
 </script>
 </body>
