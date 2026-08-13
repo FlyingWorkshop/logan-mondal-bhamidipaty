@@ -733,10 +733,14 @@
 
     starG=el("g",{opacity:sc.stars});
     starG.style.transition="opacity 1.8s ease";
+    /* hash scatter, not a stepping formula: the old (i*61, i*47) lattice
+       drew the stars in diagonal chains, and its ~11-step X wrap resonated
+       with the every-11th big star so the bright ones bunched in a column */
+    function hash(n){var f=Math.sin(n)*43758.5453123;return f-Math.floor(f);}
     var NSTARS=Math.round(78*K);
     for(var i=0;i<NSTARS;i++){
       var big=(i%11===0),s=big?PX*2:PX;
-      var X=q((i*61)%(W+40)-20),Y=q(-476+(i*47)%336);
+      var X=q(hash(i*12.9898+7)*(W+40)-20),Y=q(-476+hash(i*78.233+3)*336);
       var st=el("rect",{x:X,y:Y,width:s,height:s,
         fill:big?"#FFFFFF":"#CCD8F0","class":"star"});
       st.style.animationDelay=((i%9)*0.4).toFixed(1)+"s";
