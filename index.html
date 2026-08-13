@@ -139,10 +139,18 @@
 
   /* ---- scene ---- */
   #corner{width:100%;height:auto;display:block;overflow:visible;pointer-events:none}
-  /* height rides with width so the full 160-unit scene stays in frame on
-     wide windows; fitSky() then snaps it to a pixel-perfect scale */
-  .sky{flex:0 0 auto;width:100%;height:max(240px,25vw);display:block;margin-top:8px;
+  /* the scene is a 640-unit panorama: let it grow to 2.5x (1600px wide,
+     400px tall) and no further, so the full composition stays in frame
+     without the sky ballooning on big monitors. fitSky() snaps the scale
+     so one art pixel is always a whole number of CSS pixels. */
+  .sky{flex:0 0 auto;width:100%;max-width:1600px;margin:8px auto 0;
+    height:max(240px,min(25vw,400px));display:block;
     pointer-events:none;content-visibility:auto;contain-intrinsic-size:auto 240px}
+  /* wider than the scene: fade its edges into the page instead of cutting */
+  @media(min-width:1620px){
+    .sky{-webkit-mask-image:linear-gradient(90deg,transparent,#000 70px,#000 calc(100% - 70px),transparent);
+         mask-image:linear-gradient(90deg,transparent,#000 70px,#000 calc(100% - 70px),transparent)}
+  }
   svg rect,svg polygon,svg use{shape-rendering:crispEdges}
   .px{transition:fill 1.2s ease}
   .hill{transition:fill 1.4s ease}
@@ -921,7 +929,8 @@
   /* snap the sky so one art pixel is a whole number of CSS pixels (the
      dither shimmers at fractional scales) and the full scene height fits */
   function fitSky(){
-    var s=Math.max(1.5,Math.ceil(innerWidth/320)/2),h=(160*s)+"px";
+    var w=sky.getBoundingClientRect().width||innerWidth;
+    var s=Math.max(1.5,Math.ceil(w/320)/2),h=(160*s)+"px";
     if(sky.style.height!==h) sky.style.height=h;
   }
   addEventListener("resize",fitSky);
