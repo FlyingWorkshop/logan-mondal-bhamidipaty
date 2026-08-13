@@ -72,7 +72,8 @@
 
   /* Swap the sprite for a photo: replace the <svg id="corner"> with
      <img src="me.jpg" alt="Logan Mondal Bhamidipaty"> — the styles below still apply. */
-  .photo{float:right;width:118px;margin:2px 0 14px 24px;line-height:0}
+  /* 128px = exactly 4 CSS px per art pixel (96px on small screens = 3) */
+  .photo{float:right;width:128px;margin:2px 0 14px 24px;line-height:0}
   .photo img{width:100%;height:auto;display:block;border-radius:2px;
     filter:saturate(.9);transition:filter .6s ease}
   .photo:hover img{filter:none}
@@ -138,7 +139,9 @@
 
   /* ---- scene ---- */
   #corner{width:100%;height:auto;display:block;overflow:visible;pointer-events:none}
-  .sky{flex:0 0 auto;width:100%;height:240px;display:block;margin-top:8px;
+  /* height rides with width so the full 160-unit scene stays in frame on
+     wide windows; fitSky() then snaps it to a pixel-perfect scale */
+  .sky{flex:0 0 auto;width:100%;height:max(240px,25vw);display:block;margin-top:8px;
     pointer-events:none;content-visibility:auto;contain-intrinsic-size:auto 240px}
   svg rect,svg polygon,svg use{shape-rendering:crispEdges}
   .px{transition:fill 1.2s ease}
@@ -915,10 +918,19 @@
   if(items.length>SHOWN){ syncNews(); more.addEventListener("click",function(){open=!open;syncNews();}); }
   else{ more.style.display="none"; }
 
+  /* snap the sky so one art pixel is a whole number of CSS pixels (the
+     dither shimmers at fractional scales) and the full scene height fits */
+  function fitSky(){
+    var s=Math.max(1.5,Math.ceil(innerWidth/320)/2),h=(160*s)+"px";
+    if(sky.style.height!==h) sky.style.height=h;
+  }
+  addEventListener("resize",fitSky);
+
   build(SKIES[0]);
   show(0);
   applyLang();
   syncButtons();
+  fitSky();
 })();
 </script>
 </body>
