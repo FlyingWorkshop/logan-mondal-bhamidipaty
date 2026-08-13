@@ -160,6 +160,10 @@
      SPEED stays constant however wide the panorama is */
   .drift{animation:drift 78s linear infinite}
   @keyframes drift{from{transform:translateX(0)}to{transform:translateX(var(--drift,-640px))}}
+  /* phones see a ~280-unit window: the craft hovers in frame instead of
+     touring the loop and vanishing for half of it */
+  .sway{animation:sway 26s ease-in-out infinite alternate}
+  @keyframes sway{from{transform:translateX(-30px)}to{transform:translateX(30px)}}
   .cd1{animation:clouddrift 96s linear infinite}
   .cd2{animation:clouddrift 64s linear infinite}
   .cd3{animation:clouddrift 41s linear infinite}
@@ -211,7 +215,7 @@
   /* reduced motion: freeze a composed scene rather than blanking it */
   @media(prefers-reduced-motion:reduce){
     .seam path{animation:none;stroke-dashoffset:0}
-    .bobA,.bobB,.tilt,.drift,.cd1,.cd2,.cd3,.star,.wingA,.glowpulse,
+    .bobA,.bobB,.tilt,.drift,.sway,.cd1,.cd2,.cd3,.star,.wingA,.glowpulse,
     .burnflare,.glint,.sparkarm,.firefly{animation:none}
     .pixel{animation:none;opacity:1}
     .puff{animation:none;opacity:.4}
@@ -705,7 +709,10 @@
     /* atmosphere: sky column, sun, moon, stars, the rare meteor */
     var air=cam(1);
     skyColumn(defs,air);
-    var SUNX=q(64+XOFF),MOONX=q(470+XOFF);
+    /* phones only see the middle ~280 units: tuck the sun and moon into
+       that core so they are never out of frame */
+    var NARROW=innerWidth<630;
+    var SUNX=NARROW?q(212):q(64+XOFF),MOONX=NARROW?q(424):q(470+XOFF);
     halo(air,SUNX,q(104),11,"#F6B85E");
     /* crepuscular rays: dithered shafts climbing away from the low sun */
     function ray(dx,dy,n){
@@ -832,8 +839,13 @@
     craftDefs=craft(sc.pal,true);
     craftDefs.setAttribute("id","craft");
     defs.appendChild(craftDefs);
-    var lane=el("g",{"class":"drift"});
-    lane.style.animationDuration=(78*K)+"s";
+    var lane;
+    if(NARROW){
+      lane=el("g",{"class":"sway"});
+    }else{
+      lane=el("g",{"class":"drift"});
+      lane.style.animationDuration=(78*K)+"s";
+    }
     [0,W].forEach(function(off){ lane.appendChild(use("#craft",296+XOFF+off,24)); });
     sky.appendChild(lane);
 
