@@ -107,7 +107,8 @@
   .fill{color:var(--accent-soft);transition:color 1.2s ease,border-color 1.2s ease;
     border-bottom:1px dotted color-mix(in srgb, var(--accent-soft) 55%, transparent)}
 
-  .links{list-style:none;margin:30px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px}
+  .links{list-style:none;margin:26px 0 4px;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px}
+  .links .id{opacity:.55}
   a{color:var(--accent-soft);text-decoration:none;font-family:var(--mono);font-size:13px;
     letter-spacing:.04em;border-bottom:1px solid color-mix(in srgb, var(--accent-soft) 34%, transparent);
     transition:color 1.2s ease,border-color 1.2s ease}
@@ -268,6 +269,14 @@
 
   <p class="body t-zh" lang="zh-Hans"><em>我的研究兴趣主要在强化学习、人工智能安全与博弈论。</em></p>
 
+  <ul class="links">
+    <li><a href="https://mailhide.io/e/deFdqf4S"><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
+    <li><a href="https://github.com/FlyingWorkshop" rel="me">GitHub <span class="id">(FlyingWorkshop)</span></a></li>
+    <li><a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/logan_bhamidipaty_short_cv.pdf"><span class="t-en" lang="en">CV</span><span class="t-zh" lang="zh-Hans">简历</span></a></li>
+    <li><a href="https://scholar.google.com/citations?user=wJ_Eo0sAAAAJ&amp;hl=en"><span class="t-en" lang="en">Scholar</span><span class="t-zh" lang="zh-Hans">学术主页</span></a></li>
+    <li><a href="https://flyingworkshop.github.io/Desmos-Creations/">Desmos</a></li>
+  </ul>
+
   <section>
     <h2><span class="t-en" lang="en">News</span><span class="t-zh" lang="zh-Hans">近况</span></h2>
     <ul id="newslist">
@@ -286,15 +295,13 @@
         <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer,
           Subramanian Ramamoorthy</span>
         <span class="meta"><span class="venue"><span class="t-en" lang="en">Finding the Frame Workshop, RLC</span><span class="t-zh" lang="zh-Hans">Finding the Frame Workshop, RLC</span></span> ·
-        <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/renew_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+        <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a></span></span></li>
 
       <li><span class="date">2026</span><span>Imperfect world models are exploitable
         <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
           David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
         <span class="meta"><span class="venue"><span class="t-en" lang="en">RL in Big Worlds Workshop, RLC</span><span class="t-zh" lang="zh-Hans">RL in Big Worlds Workshop, RLC</span></span> ·
-        <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+        <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a></span></span></li>
 
       <li><span class="date">2025</span><span>Repairing reward functions with feedback to mitigate reward hacking
         <span class="authors">Stephane Hatgis-Kessell, <span class="me">Logan Mondal Bhamidipaty</span>,
@@ -344,14 +351,6 @@
         <span class="meta"><a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
     </ul>
   </section>
-
-  <ul class="links">
-    <li><a href="https://mailhide.io/e/deFdqf4S"><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
-    <li><a href="https://github.com/FlyingWorkshop" rel="me">GitHub</a></li>
-    <li><a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/logan_bhamidipaty_short_cv.pdf"><span class="t-en" lang="en">CV</span><span class="t-zh" lang="zh-Hans">简历</span></a></li>
-    <li><a href="https://scholar.google.com/citations?user=wJ_Eo0sAAAAJ&amp;hl=en"><span class="t-en" lang="en">Scholar</span><span class="t-zh" lang="zh-Hans">学术主页</span></a></li>
-    <li><a href="https://flyingworkshop.github.io/Desmos-Creations/">Desmos</a></li>
-  </ul>
 
   <div class="controls">
     <button class="ascend" id="btn" aria-describedby="cap">
