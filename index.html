@@ -753,43 +753,59 @@
     var far=grid(),water=[];
     for(x=0;x<W;x++){
       var hf=30+6*Math.sin(x*.021+1)+4*Math.sin(x*.057+2)+2*Math.sin(x*.13)
-            +10*smooth(0,1,1-Math.abs((x-AX-10)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110))
+            +10*smooth(0,1,1-Math.abs((x-AX-10)/90))
             -12*smooth(0,1,1-Math.abs((x-SUN.x)/46));         /* open water under the sun */
+      hf+=(19-hf)*smooth(0,1,(x-AX-200)/40);               /* open sea past the Lion's tail */
       fillCol(far,x,hf);
     }
     /* mid: castle rock, Calton Hill, Arthur's Seat */
     var mid=grid();
     for(x=0;x<W;x++) fillCol(mid,x,17+3*Math.sin(x*.05)+2*Math.sin(x*.11+1));
-    /* castle rock: sheer to the west, tailing off east down the Royal Mile */
-    profile(mid,[[-114,18],[-111,27],[-108,33],[-103,37],[-62,37],[-52,34],[-40,30],[-24,26],
-                 [-6,22],[12,19],[22,18]],AX);
-    /* Calton Hill */
-    profile(mid,[[28,18],[35,25],[42,31],[50,34],[62,34],[70,30],[78,24],[84,18]],AX);
-    /* Arthur's Seat: Salisbury Crags' cliff, then the lion's head */
-    profile(mid,[[74,18],[76,28],[78,33],[96,37],[102,35],[108,39],[118,50],[126,58],
-                 [132,64],[136,66],[140,65],[146,60],[156,55],[170,50],[188,42],[206,32],
-                 [224,23],[242,18]],AX);
-    /* the castle, west to east: crenellated curtain wall, the plain block of the
-       New Barracks, the Governor's House, the Great Hall's long roof, the Palace
-       with its corner turrets and flag tower, the curved Half Moon Battery.
-       Buildings go in a second grid too so they can be lit as dressed stone. */
-    var cst=grid();
-    function cb(x0,x1,top,from){block(mid,x0,x1,top);
-      for(var xx=x0;xx<=x1;xx++) for(var yy=from||38;yy<top;yy++) setp(cst,AX+xx,yy,1);}
-    cb(-105,-50,39);for(x=-105;x<=-101;x+=2) cb(x,x,40);                /* curtain wall */
-    cb(-100,-86,45);cb(-100,-100,46);cb(-86,-86,46);                     /* New Barracks */
-    cb(-85,-81,43);cb(-84,-82,44);cb(-83,-83,45);                        /* Governor's House */
-    cb(-80,-71,46);cb(-79,-72,47);cb(-78,-73,48);                        /* Great Hall */
-    cb(-70,-62,50);                                                      /* Palace */
-    cb(-71,-69,52);cb(-70,-70,54);cb(-63,-61,52);cb(-62,-62,54);         /*   turrets */
-    cb(-67,-65,55);cb(-67,-67,56);cb(-65,-65,56);                        /*   flag tower */
-    block(mid,-66,-66,62);for(x=-65;x<=-63;x++){setp(mid,AX+x,61,1);setp(mid,AX+x,60,x<-63);}  /* flag */
-    cb(-61,-51,42);cb(-60,-52,43);cb(-59,-53,44);               /* Half Moon Battery */
-    cb(-57,-55,46);cb(-57,-57,47);cb(-55,-55,47);                        /*   Portcullis Gate */
-    /* Calton Hill: Nelson's telescope tower, the unfinished Parthenon */
-    block(mid,40,42,44);block(mid,41,41,47);
-    block(mid,50,62,41);
-    for(x=51;x<=61;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
+    /* castle rock: sheer to the west, level on top, the Esplanade shelf east of
+       the castle, then the long tail down the Royal Mile */
+    profile(mid,[[-114,18],[-111,24],[-108,29],[-105,32],[-50,32],[-40,32],[-38,30],[-36,26],
+                 [-32,23],[-28,22],[-18,22],[-8,21],[12,19],[22,18]],AX);
+    /* Calton Hill: crag-faced west end, Dugald Stewart's shoulder, a level top */
+    profile(mid,[[26,18],[28,23],[30,28],[32,31],[33,32],[38,32],[40,33],[42,34],[72,34],
+                 [74,29],[76,23],[78,18]],AX);
+    /* Arthur's Seat: the sheer prow and level table of Salisbury Crags, a step
+       down, then the lion: head, notch, long back, tail */
+    profile(mid,[[76,18],[78,22],[80,32],[80,40],[81,44],[84,45],[98,45],[106,44],[112,44],
+                 [115,43],[118,41],[120,37],[122,35],[125,36],[129,36],[132,35],[135,33],[138,33],
+                 [142,35],[148,38],[154,42],[160,47],[164,51],[168,54],[170,56],[171,59],[172,62],[173,64],
+                 [176,64],[177,63],[178,61],[179,58],[180,57],[183,58],[187,60],[194,60],[197,59],
+                 [200,57],[204,53],[208,47],[212,41],[216,35],[220,31],[226,27],[232,24],[238,21],
+                 [242,18]],AX);
+    /* the castle from the south: a long, nearly level roofline and no keep.
+       West to east: the rampart and its sentry box, the War Museum, the big flat
+       New Barracks, a dip, the Crown Square range and Great Hall with the War
+       Memorial's gable peeking over, the Palace with its small stair turret and
+       flagpole, the plain drum of the Half Moon Battery, the gatehouse */
+    block(mid,-107,-50,34);block(mid,-107,-107,35);                      /* rampart, sentry box */
+    block(mid,-102,-98,44);block(mid,-102,-102,45);                      /* War Museum */
+    block(mid,-97,-83,46);[-96,-92,-88,-84].forEach(function(x){block(mid,x,x,47);});  /* New Barracks */
+    block(mid,-82,-81,40);
+    block(mid,-80,-78,44);block(mid,-79,-79,45);block(mid,-77,-75,45);   /* Crown Square */
+    block(mid,-74,-70,46);
+    block(mid,-70,-61,46);block(mid,-69,-62,47);                         /* Great Hall */
+    block(mid,-66,-64,48);block(mid,-65,-65,49);                         /* War Memorial */
+    block(mid,-59,-56,47);                                               /* Palace */
+    block(mid,-61,-60,50);block(mid,-58,-58,48);block(mid,-56,-56,48);   /*   turrets */
+    block(mid,-60,-60,53);for(x=-59;x<=-57;x++){setp(mid,AX+x,52,1);setp(mid,AX+x,51,x<-57);}  /* flag */
+    block(mid,-55,-51,45);block(mid,-50,-50,44);                         /* Half Moon Battery */
+    block(mid,-49,-46,40);                                               /* gatehouse; the Esplanade beyond */
+    /* Calton Hill: Dugald Stewart's round temple, the City Observatory, Nelson's
+       upturned telescope with its time-ball mast, the unfinished Parthenon */
+    for(x=33;x<=37;x++) setp(mid,AX+x,32,1);
+    for(y=33;y<=34;y++) for(x=33;x<=37;x++) setp(mid,AX+x,y,(x===34||x===36)?1:0);
+    for(x=33;x<=37;x++) setp(mid,AX+x,35,1);
+    for(x=34;x<=36;x++) setp(mid,AX+x,36,1);
+    setp(mid,AX+35,37,1);
+    block(mid,41,45,35);block(mid,42,44,36);
+    block(mid,47,55,36);setp(mid,AX+47,36,1);setp(mid,AX+55,36,1);
+    block(mid,50,52,39);for(x=49;x<=53;x++) setp(mid,AX+x,39,1);
+    block(mid,50,52,42);block(mid,51,51,45);setp(mid,AX+50,43,1);setp(mid,AX+52,43,1);
+    block(mid,59,71,40);for(x=60;x<=70;x+=2) for(y=35;y<=38;y++) setp(mid,AX+x,y,0);setp(mid,AX+58,34,1);setp(mid,AX+72,34,1);
 
     /* near: tenements, spires, a clock tower */
     var near=grid();windows=[];
@@ -797,15 +813,16 @@
     while(x<W+6){
       var bw=5+Math.floor(r()*8),rel=x-AX;
       var bh=8+Math.floor(r()*7)+(rel>-56&&rel<14?6:0)+(rel>-26&&rel<4?3:0);
-      var pitched=r()<.5;
+      var kind=r(),pitched=kind<.35,crow=kind>=.35&&kind<.6,lift=(rel>-118&&rel<=-56)?6:0;
       for(i=0;i<bw;i++){
-        var hh=bh;
-        if(pitched) hh=bh+Math.floor(Math.min(i,bw-1-i)/2)+1;
-        fillCol(near,x+i,hh);
+        var hh=bh,m=Math.min(i,bw-1-i);
+        if(pitched) hh=bh+Math.floor(m/2)+1;
+        if(crow) hh=bh+2*Math.floor((m+1)/2);            /* crow-stepped gable */
+        fillCol(near,x+i,hh+lift);
       }
-      if(!pitched&&r()<.8){                              /* chimney stacks with pots */
-        var cxs=x+1+Math.floor(r()*(bw-3));
-        fillCol(near,cxs,bh+3);fillCol(near,cxs+1,bh+3);setp(near,cxs,bh+3,1);
+      if(!pitched&&!crow&&r()<.8){                       /* broad stacks with a row of pots */
+        var sw=bw>=8?4:3,cxs=x+1+Math.floor(r()*(bw-sw-1));
+        for(i=0;i<sw;i++){fillCol(near,cxs+i,bh+2+lift);if(i%2===0) setp(near,cxs+i,bh+2+lift,1);}
       }
       /* sash windows, a whole floor lit or dark, on the building's own grid */
       var col0=x+1+Math.floor(r()*2);
@@ -817,55 +834,77 @@
       }
       x+=bw+(r()<.25?1:0);
     }
-    /* Scott Monument: a gothic spire in tiers, pinnacles at every corner, the
-       open arch at its foot where Scott sits */
-    var SM=-32,SMA=[
+    /* open the roofs above height h between x0 and x1, so a landmark stands clear */
+    function clear(x0,x1,h){
+      for(var xx=x0;xx<=x1;xx++) for(var yy=h;yy<LH;yy++) setp(near,AX+xx,yy,0);
+      windows=windows.filter(function(w){return w.x<AX+x0||w.x>AX+x1||w.h<h;});
+    }
+    function stamp(art,x0,top){
+      art.forEach(function(row,k){for(var c=0;c<row.length;c++) setp(near,AX+x0+c,top-k,row[c]==="#"?1:0);});
+    }
+    /* the Hub: the Old Town's tallest spire, just east of the castle */
+    block(near,-46,-36,27);block(near,-45,-37,28);block(near,-44,-38,29);   /* tall Castlehill houses */
+    block(near,-40,-36,42);
+    stamp(["..#..","..#..","..#..","..#..","..#..","..#..","..#..","#.#.#","#.#.#"],-40,50);
+    /* Scott Monument over the roofs, as from the south: spire, lantern, tower,
+       corner pinnacles with flying buttresses, down to the cornice */
+    var SM=-27;
+    clear(SM-7,SM+7,19);block(near,SM-7,SM+7,18);
+    stamp([
+      "......#......",
+      "......#......",
       "......#......",
       "......#......",
       "......#......",
       ".....###.....",
-      "....#.#.#....",
+      ".....###.....",
+      ".....###.....",
+      ".....###.....",
+      ".....###.....",
+      ".....###.....",
+      ".....###.....",
       "....#####....",
       "....#####....",
-      "...#.###.#...",
-      "...#######...",
-      "...#######...",
-      "...#######...",
-      "..#.#####.#..",
-      "..#.#####.#..",
-      "..#########..",
-      "..####.####..",
-      "..####.####..",
-      "..#########..",
+      "....#####....",
+      "....#####....",
+      "....#####....",
       ".#..#####..#.",
-      ".#.#######.#.",
-      ".###########.",
-      ".####...####.",
-      ".###.....###.",
-      ".###.....###.",
-      ".###.....###.",
-      "#############"];
-    SMA.forEach(function(row,k){
-      for(var c=0;c<13;c++) if(row[c]==="#") setp(near,AX+SM+c-6,18+SMA.length-1-k,1);});
-    for(y=12;y<18;y++) for(x=-6;x<=6;x++) setp(near,AX+SM+x,y,1);
-    /* St Giles' crown steeple */
-    block(near,-8,-2,28);
-    for(x=-8;x<=-2;x++) if((x+8)%3!==1) fillCol(near,AX+x,33);
-    block(near,-6,-4,35);block(near,-5,-5,39);
-    /* Balmoral clock tower */
-    block(near,14,26,20);block(near,18,22,33);block(near,19,21,36);block(near,20,20,39);
-    windows.push({x:AX+20,h:29,tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});
+      ".#..#####..#.",
+      "##..#####..##",
+      "##.#######.##",
+      "###.#####.###",
+      "##..#####..##",
+      "##..#####..##",
+      "##..#####..##",
+      "#############",
+      "#############"],SM-6,44);
+    /* St Giles: square tower, then the open crown of flying ribs and its lantern */
+    clear(-11,1,23);
+    block(near,-8,-2,32);
+    stamp(["...#...","...#...","...#...","..###..","..###..","#.###.#","##.#.##","##.#.##","#..#..#","#..#..#"],-8,41);
+    /* Balmoral: the hotel block with corner domes, and its square clock tower
+       with corner finials and a tall narrow crown, just below St Giles */
+    clear(5,35,19);
+    block(near,5,35,19);block(near,6,34,22);
+    block(near,6,10,23);block(near,7,9,24);setp(near,AX+8,24,1);
+    block(near,30,34,23);block(near,31,33,24);setp(near,AX+32,24,1);
+    [13,15,25,27].forEach(function(cx){block(near,cx,cx,25);});
+    block(near,17,23,33);
+    setp(near,AX+16,27,1);setp(near,AX+24,27,1);
+    block(near,17,17,35);block(near,23,23,35);
+    block(near,19,21,37);block(near,20,20,39);
+    [[20,30],[19,30],[21,30],[20,29],[20,31]].forEach(function(p){
+      windows.push({x:AX+p[0],h:p[1],tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});});
 
     /* shade a layer: vertical ramp, sunlit rim along top and left edges */
-    function shade(g,top,bot,rim,rimL,tint,tc){
+    function shade(g,top,bot,rim,rimL){
       var c=canvas(W,LH),gx=c.getContext("2d"),id=gx.createImageData(W,LH),d=id.data;
-      var T=hex(top),Bt=hex(bot),R=hex(rim),RL=hex(rimL||rim),TC=tint&&hex(tc);
+      var T=hex(top),Bt=hex(bot),R=hex(rim),RL=hex(rimL||rim);
       for(y=0;y<LH;y++) for(x=0;x<W;x++){
         var p=y*W+x;
         if(!g[p]) continue;
         var up=y>0&&g[p-W],lf=x>0&&g[p-1];
         var q=step((y/LH)*3,x,y)/3,col=mix(T,Bt,q);
-        if(tint&&tint[p]) col=mix(col,TC,.42);
         var fall=.7*clamp(Math.abs(x-SUN.x)/(W*.6),0,1);
         if(!up) col=mix(R,col,fall);
         else if(!lf) col=mix(RL,col,fall);
@@ -880,17 +919,16 @@
     for(y=LH-19;y<LH-15;y++){fg.fillStyle=y===LH-19?"#FFE0B6":"#E9B7A2";fg.fillRect(0,y,W,1);}
     for(i=0;i<W/6;i++) water.push({x:Math.floor(r()*W),y:LH-18+Math.floor(r()*3),ph:r()*6.28});
 
-    var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778",cst,"#8C7395");
+    var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
     var mg=midC.getContext("2d");
-    /* windows: rows on the barracks, lancets in the hall, gun ports in the battery */
-    function win(c,pts){mg.fillStyle=c;pts.forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1]-(p[2]||1)+1,1,p[2]||1);});}
+    /* castle windows: rows on the barracks, the hall, the palace, the battery */
+    function win(c,pts){mg.fillStyle=c;pts.forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});}
     var dk=[];
-    for(x=-98;x<=-88;x+=2){dk.push([x,41]);dk.push([x,43]);}
-    [-79,-77,-74,-72].forEach(function(x){dk.push([x,43,2]);});
-    [-68,-64].forEach(function(x){dk.push([x,46]);dk.push([x,48]);});
-    [-59,-56,-53].forEach(function(x){dk.push([x,40]);});
-    win("#3A2C50",dk);
-    win("#E9B57E",[[-94,41],[-92,43],[-83,41],[-66,48]]);
+    for(x=-96;x<=-84;x+=2) [36,38,40,42,44].forEach(function(h){dk.push([x,h]);});
+    [-68,-65,-63].forEach(function(x){dk.push([x,42]);});
+    dk.push([-58,42],[-58,44],[-54,41],[-52,41]);
+    win("#33264A",dk);
+    win("#E9B57E",[[-92,42],[-86,40],[-73,42],[-57,44]]);
     var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
     return {far:farC,mid:midC,near:nearC,water:water};
   }
