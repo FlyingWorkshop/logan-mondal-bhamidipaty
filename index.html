@@ -769,15 +769,23 @@
     profile(mid,[[74,18],[76,28],[78,33],[96,37],[102,35],[108,39],[118,50],[126,58],
                  [132,64],[136,66],[140,65],[146,60],[156,55],[170,50],[188,42],[206,32],
                  [224,23],[242,18]],AX);
-    /* the castle: low west ramparts, the New Barracks, Great Hall and Palace,
-       the round Half Moon Battery at the east end, flag flying */
-    block(mid,-104,-96,39);for(x=-104;x<=-96;x+=2) block(mid,x,x,40);   /* west ramparts */
-    block(mid,-95,-80,44);                                               /* New Barracks */
-    block(mid,-79,-71,46);block(mid,-78,-72,47);                         /* Great Hall */
-    block(mid,-70,-63,49);                                               /* Palace */
-    block(mid,-66,-63,54);for(x=-66;x<=-63;x+=2) block(mid,x,x,55);      /* Palace tower */
-    block(mid,-65,-65,61);setp(mid,AX-64,60,1);setp(mid,AX-63,60,1);setp(mid,AX-64,59,1);
-    block(mid,-62,-54,42);block(mid,-61,-55,44);block(mid,-60,-56,45);   /* Half Moon Battery */
+    /* the castle, west to east: crenellated curtain wall, the plain block of the
+       New Barracks, the Governor's House, the Great Hall's long roof, the Palace
+       with its corner turrets and flag tower, the curved Half Moon Battery.
+       Buildings go in a second grid too so they can be lit as dressed stone. */
+    var cst=grid();
+    function cb(x0,x1,top,from){block(mid,x0,x1,top);
+      for(var xx=x0;xx<=x1;xx++) for(var yy=from||38;yy<top;yy++) setp(cst,AX+xx,yy,1);}
+    cb(-105,-50,39);for(x=-105;x<=-101;x+=2) cb(x,x,40);                /* curtain wall */
+    cb(-100,-86,45);cb(-100,-100,46);cb(-86,-86,46);                     /* New Barracks */
+    cb(-85,-81,43);cb(-84,-82,44);cb(-83,-83,45);                        /* Governor's House */
+    cb(-80,-71,46);cb(-79,-72,47);cb(-78,-73,48);                        /* Great Hall */
+    cb(-70,-62,50);                                                      /* Palace */
+    cb(-71,-69,52);cb(-70,-70,54);cb(-63,-61,52);cb(-62,-62,54);         /*   turrets */
+    cb(-67,-65,55);cb(-67,-67,56);cb(-65,-65,56);                        /*   flag tower */
+    block(mid,-66,-66,62);for(x=-65;x<=-63;x++){setp(mid,AX+x,61,1);setp(mid,AX+x,60,x<-63);}  /* flag */
+    cb(-61,-51,42);cb(-60,-52,43);cb(-59,-53,44);               /* Half Moon Battery */
+    cb(-57,-55,46);cb(-57,-57,47);cb(-55,-55,47);                        /*   Portcullis Gate */
     /* Calton Hill: Nelson's telescope tower, the unfinished Parthenon */
     block(mid,40,42,44);block(mid,41,41,47);
     block(mid,50,62,41);
@@ -809,15 +817,37 @@
       }
       x+=bw+(r()<.25?1:0);
     }
-    /* Scott Monument: a gothic rocket */
-    var SM=-32;
-    for(y=12;y<=48;y++){
-      var half=Math.round(4.5*(1-(y-12)/38));
-      for(x=-half;x<=half;x++) setp(near,AX+SM+x,y,1);
-    }
-    [[-4,30],[4,30],[-3,38],[3,38],[-5,22],[5,22]].forEach(function(p){
-      setp(near,AX+SM+p[0],p[1],1);setp(near,AX+SM+p[0],p[1]+1,1);setp(near,AX+SM+p[0],p[1]+2,1);});
-    for(y=13;y<=17;y++){setp(near,AX+SM-1,y,0);setp(near,AX+SM+1,y,0);}
+    /* Scott Monument: a gothic spire in tiers, pinnacles at every corner, the
+       open arch at its foot where Scott sits */
+    var SM=-32,SMA=[
+      "......#......",
+      "......#......",
+      "......#......",
+      ".....###.....",
+      "....#.#.#....",
+      "....#####....",
+      "....#####....",
+      "...#.###.#...",
+      "...#######...",
+      "...#######...",
+      "...#######...",
+      "..#.#####.#..",
+      "..#.#####.#..",
+      "..#########..",
+      "..####.####..",
+      "..####.####..",
+      "..#########..",
+      ".#..#####..#.",
+      ".#.#######.#.",
+      ".###########.",
+      ".####...####.",
+      ".###.....###.",
+      ".###.....###.",
+      ".###.....###.",
+      "#############"];
+    SMA.forEach(function(row,k){
+      for(var c=0;c<13;c++) if(row[c]==="#") setp(near,AX+SM+c-6,18+SMA.length-1-k,1);});
+    for(y=12;y<18;y++) for(x=-6;x<=6;x++) setp(near,AX+SM+x,y,1);
     /* St Giles' crown steeple */
     block(near,-8,-2,28);
     for(x=-8;x<=-2;x++) if((x+8)%3!==1) fillCol(near,AX+x,33);
@@ -827,14 +857,15 @@
     windows.push({x:AX+20,h:29,tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});
 
     /* shade a layer: vertical ramp, sunlit rim along top and left edges */
-    function shade(g,top,bot,rim,rimL){
+    function shade(g,top,bot,rim,rimL,tint,tc){
       var c=canvas(W,LH),gx=c.getContext("2d"),id=gx.createImageData(W,LH),d=id.data;
-      var T=hex(top),Bt=hex(bot),R=hex(rim),RL=hex(rimL||rim);
+      var T=hex(top),Bt=hex(bot),R=hex(rim),RL=hex(rimL||rim),TC=tint&&hex(tc);
       for(y=0;y<LH;y++) for(x=0;x<W;x++){
         var p=y*W+x;
         if(!g[p]) continue;
         var up=y>0&&g[p-W],lf=x>0&&g[p-1];
         var q=step((y/LH)*3,x,y)/3,col=mix(T,Bt,q);
+        if(tint&&tint[p]) col=mix(col,TC,.42);
         var fall=.7*clamp(Math.abs(x-SUN.x)/(W*.6),0,1);
         if(!up) col=mix(R,col,fall);
         else if(!lf) col=mix(RL,col,fall);
@@ -849,10 +880,17 @@
     for(y=LH-19;y<LH-15;y++){fg.fillStyle=y===LH-19?"#FFE0B6":"#E9B7A2";fg.fillRect(0,y,W,1);}
     for(i=0;i<W/6;i++) water.push({x:Math.floor(r()*W),y:LH-18+Math.floor(r()*3),ph:r()*6.28});
 
-    var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
+    var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778",cst,"#8C7395");
     var mg=midC.getContext("2d");
-    mg.fillStyle="#BD9575";
-    [[-92,41],[-88,41],[-84,41],[-76,43],[-68,46],[-65,51],[-58,39]].forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});
+    /* windows: rows on the barracks, lancets in the hall, gun ports in the battery */
+    function win(c,pts){mg.fillStyle=c;pts.forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1]-(p[2]||1)+1,1,p[2]||1);});}
+    var dk=[];
+    for(x=-98;x<=-88;x+=2){dk.push([x,41]);dk.push([x,43]);}
+    [-79,-77,-74,-72].forEach(function(x){dk.push([x,43,2]);});
+    [-68,-64].forEach(function(x){dk.push([x,46]);dk.push([x,48]);});
+    [-59,-56,-53].forEach(function(x){dk.push([x,40]);});
+    win("#3A2C50",dk);
+    win("#E9B57E",[[-94,41],[-92,43],[-83,41],[-66,48]]);
     var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
     return {far:farC,mid:midC,near:nearC,water:water};
   }
