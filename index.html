@@ -983,26 +983,28 @@
         blend(st.x,syy-1,STAR,arm);blend(st.x,syy+1,STAR,arm);
       }
     }
-    /* aurora at the top of the climb: two folded curtains, green at the hem
-       fading up through teal to violet, with fine rays drifting along them.
+    /* aurora at the top of the climb: two folded curtains of soft glow, yellow-
+       green low down (it reads green over the blue sky) fading up to magenta-red,
+       a faint pink hem where the fold is bright, faint uneven rays on top.
        The hem stays soft so the dark sky under it never reads as hills. */
     var aur=smooth(330,460,camY);
     if(aur>0){
-      var G1=hex("#62F2A8"),G2=hex("#4FCFD6"),G3=hex("#9C7CF2");
+      var AG=hex("#9DFF7C"),AR=hex("#D2508E"),AP=hex("#FF86C8");
       [[0,1,0],[24,.45,2.1]].forEach(function(cu){
         var off=cu[0],gain=cu[1],ph=cu[2];
         for(x=0;x<W;x++){
           var base=AURA+off+5*Math.sin(x*.03+t*.25+ph)+3*Math.sin(x*.083-t*.4+ph)+2*Math.sin(x*.19+t*.7);
           var fold=.5+.5*Math.sin(x*.045+t*.3+ph+2*Math.sin(x*.02+t*.15));
-          var ray=Math.pow(.5+.5*Math.sin(x*.55+t*1.1+ph+3*Math.sin(x*.05+t*.2)),4);
-          var ci=gain*(.25+.75*fold)*(.55+.45*ray),Lr=(26+20*fold)*(.7+.5*ray);
+          var ray=.5*Math.pow(.5+.5*Math.sin(x*.31+t*.6+ph+2*Math.sin(x*.04+t*.2)),2)
+                 +.5*Math.pow(.5+.5*Math.sin(x*.13-t*.35+ph*1.7),2);
+          var ci=gain*(.35+.65*fold)*(.8+.2*ray),Lr=(26+20*fold)*(.9+.15*ray);
           for(var j=0;j<Lr;j++){
             var yy=Math.round(H-1-(base+j-shift));
             if(yy<0||yy>=H) continue;
             var fr=j/Lr,al2=aur*ci*.8*Math.min(1,(j+1)/5)*Math.pow(1-fr,1.2);
-            al2=Math.floor(al2*6+bay(x,yy)*.9)/6;
+            al2=Math.floor(al2*8+bay(x,yy)*.9)/8;
             if(al2<=0) continue;
-            var col=fr<.35?mix(G1,G2,fr/.35):mix(G2,G3,(fr-.35)/.65);
+            var col=(j<2&&fold>.6)?AP:fr<.45?AG:mix(AG,AR,(fr-.45)/.55);
             addpx(x,yy,col,al2*.8);
           }
         }
