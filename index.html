@@ -156,7 +156,6 @@
   @media(min-width:560px){section li{grid-template-columns:62px 1fr}}
   section li[hidden]{display:none}
   .date{font-family:var(--pix);font-size:11px;letter-spacing:.06em;color:var(--muted);padding-top:3px;white-space:nowrap}
-  body[data-lang="zh"] .date .t-zh{font-family:var(--sans);font-size:12px}
   .title{color:#F1EBDF;font-weight:400}
   .venue{color:var(--muted);font-style:italic}
   .authors{display:block;font-size:13.5px;line-height:1.55;color:#9C95A6;margin:2px 0 1px}
@@ -165,7 +164,6 @@
   .meta a{font-family:var(--mono);font-size:12.5px}
   .new{display:inline-block;margin-left:8px;padding:1px 6px 0;vertical-align:2px;font-family:var(--pix);font-size:9px;letter-spacing:.08em;
     color:var(--night);background:var(--accent);clip-path:var(--notch);transition:background 1.2s ease}
-  .more{margin:10px 0 0}
 
   footer{padding:30px 0 46px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#5F586C}
   footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -243,19 +241,6 @@
     </ul>
 
     <section>
-      <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">News</span><span class="t-zh" lang="zh-Hans">近况</span></h2>
-      <ul id="newslist">
-        <li><span class="date"><span class="t-en" lang="en">Oct 2026</span><span class="t-zh" lang="zh-Hans">2026年10月</span></span><span><span class="t-en" lang="en">New preprint: BIRD, a benchmark for iterative reward design.</span><span class="t-zh" lang="zh-Hans">新预印本：BIRD，迭代式奖励设计的基准。</span></span></li>
-        <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Two workshop papers at RLC 2026 in Montreal.</span><span class="t-zh" lang="zh-Hans">两篇 workshop 论文入选蒙特利尔 RLC 2026。</span></span></li>
-        <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Started Anthropic research fellowship.</span><span class="t-zh" lang="zh-Hans">开始 Anthropic 研究员项目。</span></span></li>
-        <li><span class="date"><span class="t-en" lang="en">Jul 2026</span><span class="t-zh" lang="zh-Hans">2026年7月</span></span><span><span class="t-en" lang="en">New preprint: RENEW, on repairing model exploitation from preferences.</span><span class="t-zh" lang="zh-Hans">新预印本：RENEW，用偏好修复世界模型的可利用性。</span></span></li>
-        <li><span class="date"><span class="t-en" lang="en">May 2026</span><span class="t-zh" lang="zh-Hans">2026年5月</span></span><span><span class="t-en" lang="en">New preprint: Imperfect World Models are Exploitable.</span><span class="t-zh" lang="zh-Hans">新预印本：Imperfect World Models are Exploitable。</span></span></li>
-        <li><span class="date"><span class="t-en" lang="en">Sep 2025</span><span class="t-zh" lang="zh-Hans">2025年9月</span></span><span><span class="t-en" lang="en">Started the PhD in Edinburgh.</span><span class="t-zh" lang="zh-Hans">开始在爱丁堡读博。</span></span></li>
-      </ul>
-      <button class="pxbtn more" id="more" type="button" aria-expanded="false" aria-controls="newslist">earlier</button>
-    </section>
-
-    <section>
       <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Research</span><span class="t-zh" lang="zh-Hans">研究</span></h2>
       <ul>
         <li><span class="date">2026</span><span><span class="title">A Bird's-Eye View of Iterative Reward Design</span><span class="new">new</span>
@@ -274,7 +259,7 @@
         <li><span class="date">2026</span><span><span class="title">Imperfect World Models are Exploitable</span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
             David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
-          <span class="meta"><span class="venue">RL in Big Worlds Workshop, RLC</span> ·
+          <span class="meta"><span class="venue">NeurIPS 2026</span> · <span class="venue">RL in Big Worlds Workshop, RLC</span> ·
           <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> ·
           <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
 
@@ -1217,26 +1202,14 @@
 
   /* ========================================================== LANGUAGE */
   var LANG=(navigator.language||"en").slice(0,2)==="zh"?"zh":"en";
-  var MORE={en:{open:"less",shut:"earlier"},zh:{open:"收起",shut:"更早"}};
   function applyLang(){
     document.body.setAttribute("data-lang",LANG);
     document.documentElement.setAttribute("lang",LANG==="zh"?"zh-Hans":"en");
-    syncNews();
   }
   document.getElementById("lang").addEventListener("click",function(){
     LANG=LANG==="zh"?"en":"zh";applyLang();scheduleLayout();
   });
 
-  /* news: one screen by default, older lines on request */
-  var SHOWN=3,items=[].slice.call(document.querySelectorAll("#newslist li")),
-      more=document.getElementById("more"),open=false;
-  function syncNews(){
-    items.forEach(function(li,i){if(i>=SHOWN&&!open)li.setAttribute("hidden","");else li.removeAttribute("hidden");});
-    more.textContent=open?MORE[LANG].open:MORE[LANG].shut;
-    more.setAttribute("aria-expanded",open?"true":"false");
-  }
-  if(items.length>SHOWN){more.addEventListener("click",function(){open=!open;syncNews();});}
-  else{more.style.display="none";}
 
   /* ============================================================= ICONS */
   var ICONS={
