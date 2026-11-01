@@ -2,967 +2,1265 @@
 <!--
   Logan Mondal Bhamidipaty — single page.
 
-  Conceit: FlyingWorkshop. A pixel-art workshop slung under a balloon.
-  "ascend" pans the camera up one continuous column of sky; the craft holds its
-  place in frame while ground, clouds and stars fall past it at different rates.
-  The craft: a gore-striped balloon over a shingled workshop with a glowing
-  shop window and a side propeller, drawn on the same grid as everything else.
+  Conceit: FlyingWorkshop. A pixel-art workshop slung under a balloon, hovering
+  over Edinburgh at golden hour. "ascend" pans the camera up one continuous
+  column of sky: through the cloud deck, into thin air, up to the stars and the
+  aurora. The craft holds its place in frame while everything else falls past.
 
-  Everything in the scene is drawn on ONE pixel grid: PX = 2 user units per art
-  pixel, and no sprite, ridge or dither cell is ever off that grid.
-
-  PLACEHOLDERS: the four news lines, and the titles/links for PBRR and RENEW.
-  To use a photo instead of the corner sprite, see the note above <figure>.
+  The scene is one <canvas> at art resolution (one canvas pixel = one art
+  pixel), scaled up by a whole number of device pixels with image-rendering:
+  pixelated, so nothing is ever drawn off the grid. Every sprite (balloon,
+  workshop, clouds, skyline) is generated at load from code, not image files.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Logan Mondal Bhamidipaty</title>
-<meta name="description" content="Logan Mondal Bhamidipaty — AI PhD student at the University of Edinburgh, working on reinforcement learning, game theory, and market design.">
+<meta name="description" content="Logan Mondal Bhamidipaty — AI PhD student at the University of Edinburgh, working on reinforcement learning, AI alignment, and game theory.">
 <meta property="og:title" content="Logan Mondal Bhamidipaty">
-<meta property="og:description" content="AI PhD student at the University of Edinburgh. Reinforcement learning, game theory, market design.">
+<meta property="og:description" content="AI PhD student at the University of Edinburgh. Reinforcement learning, AI alignment, game theory.">
 <meta property="og:type" content="website">
+<meta name="theme-color" content="#16121F">
 <link rel="icon" href="/assets/images/favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon/favicon-16x16.png">
 <link rel="apple-touch-icon" href="/assets/images/favicon/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700&family=Noto+Serif+SC:wght@400&family=Noto+Sans+SC:wght@300;400&family=IBM+Plex+Sans:wght@300;400&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700&family=Noto+Serif+SC:wght@400&family=Noto+Sans+SC:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400&family=Silkscreen&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#101420;
-    --bone:#E8E4DA;
-    --accent:#E8A552;
-    --accent-soft:#F6D9A8;
-    --muted:#868C9A;
+    --night:#16121F;
+    --panel:#1E1829;
+    --panel-hi:#272036;
+    --bone:#EEE7DA;
+    --text:#C9C2B8;
+    --muted:#8E879A;
+    --accent:#F2A25C;
+    --accent-soft:#F8D3A0;
     --mincho:"Zen Old Mincho","Noto Serif SC",'Hiragino Mincho ProN',Georgia,serif;
     --sans:"IBM Plex Sans","Noto Sans SC",'Helvetica Neue',Arial,sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --pix:"Silkscreen","IBM Plex Mono","Noto Sans SC",ui-monospace,monospace;
+    /* stepped corners, one 3px "pixel" deep */
+    --notch:polygon(0 3px,3px 3px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px));
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html{background:var(--night)}
   body{
-    margin:0;background:var(--ink);color:var(--bone);
-    font-family:var(--sans);font-weight:300;font-size:17px;line-height:1.8;
-    -webkit-font-smoothing:antialiased;
-    display:flex;flex-direction:column;min-height:100%;overflow-x:hidden;
+    margin:0;background:var(--night);color:var(--bone);
+    font-family:var(--sans);font-weight:300;font-size:17px;line-height:1.75;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
   }
-  main{flex:1 0 auto;width:100%;max-width:620px;margin:0 auto;padding:76px 26px 20px;position:relative}
+  ::selection{background:color-mix(in srgb, var(--accent) 40%, transparent);color:#fff}
 
   /* one page, two languages: only the matching copy is rendered */
   body[data-lang="en"] .t-zh,body[data-lang="zh"] .t-en{display:none}
-  /* CJK wants tight tracking and has no italic tradition */
   .t-zh{letter-spacing:.04em}
   h1 .t-zh{letter-spacing:.02em}
   body[data-lang="zh"] p.body em{font-style:normal;color:#EDE9DF}
   body[data-lang="zh"] p.body{line-height:1.95}
-  .lang{position:absolute;top:30px;right:26px;background:none;border:0;padding:3px 0;cursor:pointer;
-    font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);
-    border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
-  .lang:hover{color:var(--accent-soft);
-    border-color:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
-  @media(min-width:700px){main{padding-top:104px}}
 
-  h1{font-family:var(--mincho);font-weight:400;font-size:clamp(2.1rem,7vw,2.9rem);
-    line-height:1.08;margin:0 0 14px;color:#F5F1E7;letter-spacing:.005em}
-  h1 .zh{color:var(--accent);font-size:.72em;margin-left:.32em;
+  .wrap{width:100%;max-width:720px;margin:0 auto;padding:0 24px;position:relative}
+
+  /* ---------------------------------------------------------------- hero */
+  .hero{position:relative;height:clamp(500px,76vh,680px);overflow:hidden;background:#6283BC;isolation:isolate}
+  #scene{position:absolute;bottom:0;left:0;display:block;
+    image-rendering:pixelated;image-rendering:crisp-edges;z-index:-1}
+  .hero-top{padding-top:clamp(56px,11vh,96px)}
+  h1{font-family:var(--mincho);font-weight:400;font-size:clamp(2.2rem,6.4vw,3.35rem);
+    line-height:1.06;margin:0;color:#FFF8EA;letter-spacing:.005em;
+    text-shadow:3px 3px 0 rgba(26,20,48,.28)}
+  h1 .nm{display:inline}
+  h1 .zh{color:var(--accent-soft);font-size:.62em;margin-left:.34em;
     font-family:"Noto Serif SC",var(--mincho);transition:color 1.2s ease}
+  .role{display:inline-block;margin:16px 0 0;padding:5px 10px 4px;font-family:var(--pix);font-size:12px;
+    letter-spacing:.08em;color:#FFF3DC;background:rgba(28,22,48,.34);clip-path:var(--notch)}
+  body[data-lang="zh"] .role{font-family:var(--sans);font-weight:400;font-size:12.5px;letter-spacing:.14em}
 
-  /* Swap the sprite for a photo: replace the <svg id="corner"> with
-     <img src="me.jpg" alt="Logan Mondal Bhamidipaty"> — the styles below still apply. */
-  /* 128px = exactly 4 CSS px per art pixel (96px on small screens = 3) */
-  .photo{float:right;width:128px;margin:2px 0 14px 24px;line-height:0}
-  .photo img{width:100%;height:auto;display:block;border-radius:2px;
-    filter:saturate(.9);transition:filter .6s ease}
-  .photo:hover img{filter:none}
-  @media(max-width:520px){.photo{float:none;width:96px;margin:0 0 14px}}
+  .lang{position:absolute;top:22px;right:24px;z-index:2}
+  .hero-foot{position:absolute;left:0;right:0;bottom:30px;z-index:2}
+  .hero-foot .wrap{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
 
-  .seam{width:100%;height:9px;margin:0 0 18px;overflow:visible;display:block}
-  .seam path{fill:none;stroke:var(--accent);stroke-width:1.1;opacity:.9;transition:stroke 1.2s ease;
-    stroke-dasharray:620;stroke-dashoffset:620;animation:draw 1.6s ease-out .3s forwards}
-  .role{font-family:var(--mono);font-size:11.5px;letter-spacing:.15em;
-    color:var(--muted);margin:0 0 32px}
-  p.body{margin:0 0 18px;color:#C4C2BC;max-width:52ch}
-  p.body em{font-style:italic;color:#DEDACF}
+  /* pixel buttons: stepped corners, a lit top edge and a shadowed lip */
+  .pxbtn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:0;
+    font-family:var(--pix);font-size:12px;letter-spacing:.08em;color:var(--bone);
+    background:#2A2140;padding:8px 13px 9px;clip-path:var(--notch);
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.08),inset 0 -3px 0 rgba(0,0,0,.32);
+    transition:background .2s ease,color .2s ease,transform .08s ease}
+  .pxbtn:hover{background:#3A2E58;color:#fff}
+  .pxbtn:active{transform:translateY(2px);box-shadow:inset 0 3px 0 rgba(0,0,0,.25)}
+  .pxbtn[disabled]{cursor:default;opacity:.4}
+  .pxbtn[disabled]:hover{background:#2A2140;color:var(--bone)}
+  .pxbtn svg{width:14px;height:8px;fill:var(--accent);shape-rendering:crispEdges;transition:fill 1.2s ease}
+  .lang.pxbtn{background:rgba(28,22,48,.42);font-size:11px;padding:6px 10px 7px}
+  .lang.pxbtn:hover{background:rgba(28,22,48,.7)}
+  body[data-lang="zh"] .pxbtn .t-zh{font-family:var(--sans);font-weight:400;letter-spacing:.12em}
 
-  section{margin:34px 0 0;clear:both}
-  section h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
-    font-weight:400;color:var(--accent);margin:0 0 12px;transition:color 1.2s ease}
+  .alt{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto}
+  .readout{min-width:150px;text-align:center;padding:6px 12px 7px;background:rgba(22,17,36,.72);
+    clip-path:var(--notch);font-family:var(--pix);font-size:11px;line-height:1.5;letter-spacing:.08em;color:var(--muted)}
+  .readout b{display:block;font-weight:400;font-size:15px;color:var(--accent-soft);letter-spacing:.06em;transition:color 1.2s ease}
+  body[data-lang="zh"] .readout span{font-family:var(--sans);letter-spacing:.14em}
+
+  .caption{margin:0;font-family:var(--mincho);font-size:17px;line-height:1.45;color:#EDEAF6;
+    text-shadow:2px 2px 0 rgba(8,8,24,.5);max-width:30ch;transition:opacity .5s ease}
+  .caption .src{display:block;margin-top:6px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#A9AFCB}
+  .caption:empty{display:none}
+  @media(max-width:640px){
+    .role{font-size:10px;letter-spacing:.04em;line-height:1.7}
+    .hero-foot{bottom:22px}
+    .hero-foot .wrap{flex-direction:column-reverse;align-items:center;text-align:center}
+    .caption{max-width:none}
+  }
+
+  /* --------------------------------------------------------------- content */
+  main{padding:34px 0 30px}
+  p.body{margin:0 0 18px;color:var(--text);max-width:60ch}
+  p.body em{font-style:italic;color:#E2DDD2}
+  .lede{font-size:18.5px;color:#DAD3C8}
+
+  a{color:var(--accent-soft);text-decoration:none;
+    background-image:linear-gradient(90deg,currentColor 50%,transparent 50%);
+    background-size:4px 1px;background-repeat:repeat-x;background-position:0 100%;
+    transition:color .3s ease}
+  a:hover{color:#fff;background-size:4px 2px}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  .links{list-style:none;margin:26px 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:9px;padding:8px 13px 8px 11px;background:var(--panel);
+    font-family:var(--pix);font-size:12px;letter-spacing:.06em;color:var(--accent-soft);
+    clip-path:var(--notch);background-image:none;
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.04),inset 0 -3px 0 rgba(0,0,0,.28);
+    transition:background .2s ease,color .2s ease,transform .15s ease}
+  .chip:hover{background:var(--panel-hi);color:#fff;transform:translateY(-2px)}
+  .chip .id{color:var(--muted);text-transform:none}
+  body[data-lang="zh"] .chip .t-zh{font-family:var(--sans);font-weight:400;letter-spacing:.1em}
+  .ico{display:block;height:14px;width:auto;fill:var(--accent);shape-rendering:crispEdges;flex:0 0 auto;transition:fill 1.2s ease}
+
+  section{margin:46px 0 0}
+  section h2{display:flex;align-items:center;gap:10px;margin:0 0 14px;
+    font-family:var(--pix);font-weight:400;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    transition:color 1.2s ease}
+  body[data-lang="zh"] section h2{font-family:var(--sans);font-size:14px;letter-spacing:.3em}
+  section h2 .ico{height:10px}
+  section h2::after{content:"";flex:1;height:2px;margin-left:6px;
+    background:repeating-linear-gradient(90deg,rgba(238,231,218,.16) 0 2px,transparent 2px 6px)}
   section ul{list-style:none;margin:0;padding:0}
-  section li{display:grid;gap:1px 16px;padding:7px 0;font-size:15px;color:#C4C2BC;line-height:1.6}
-  @media(min-width:520px){section li{grid-template-columns:76px 1fr}}
+  section li{display:grid;gap:2px 18px;padding:12px 14px;margin:0 -14px;font-size:15px;color:var(--text);line-height:1.6;
+    clip-path:var(--notch);transition:background .25s ease}
+  section li:hover{background:var(--panel)}
+  @media(min-width:560px){section li{grid-template-columns:62px 1fr}}
   section li[hidden]{display:none}
-  .date{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted);
-    padding-top:3px;white-space:nowrap}
+  .date{font-family:var(--pix);font-size:11px;letter-spacing:.06em;color:var(--muted);padding-top:3px;white-space:nowrap}
+  body[data-lang="zh"] .date .t-zh{font-family:var(--sans);font-size:12px}
+  .title{color:#F1EBDF;font-weight:400}
   .venue{color:var(--muted);font-style:italic}
-  .authors{display:block;font-size:13.5px;line-height:1.55;color:#9AA0AC;margin:1px 0 1px}
-  .authors .me{color:#E2DED4}
+  .authors{display:block;font-size:13.5px;line-height:1.55;color:#9C95A6;margin:2px 0 1px}
+  .authors .me{color:#EFE8DC;font-weight:400}
   .meta{display:block;font-size:13.5px;color:var(--muted)}
-  .more{margin:8px 0 0;background:none;border:0;padding:0;cursor:pointer;
-    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--muted);border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
-  .more:hover{color:var(--accent-soft);border-color:color-mix(in srgb, var(--accent-soft) 40%, transparent)}
-  .fill{color:var(--accent-soft);transition:color 1.2s ease,border-color 1.2s ease;
-    border-bottom:1px dotted color-mix(in srgb, var(--accent-soft) 55%, transparent)}
+  .meta a{font-family:var(--mono);font-size:12.5px}
+  .new{display:inline-block;margin-left:8px;padding:1px 6px 0;vertical-align:2px;font-family:var(--pix);font-size:9px;letter-spacing:.08em;
+    color:var(--night);background:var(--accent);clip-path:var(--notch);transition:background 1.2s ease}
+  .more{margin:10px 0 0}
 
-  .links{list-style:none;margin:26px 0 4px;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px}
-  .links .id{opacity:.55}
-  a{color:var(--accent-soft);text-decoration:none;font-family:var(--mono);font-size:13px;
-    letter-spacing:.04em;border-bottom:1px solid color-mix(in srgb, var(--accent-soft) 34%, transparent);
-    transition:color 1.2s ease,border-color 1.2s ease}
-  p.body a,section li a{font-size:inherit;font-family:inherit;letter-spacing:0}
-  a:hover{color:#fff;border-color:var(--accent)}
-  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:2px}
+  footer{padding:30px 0 46px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#5F586C}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  footer a{color:#7E778C}
 
-  .controls{margin:40px 0 0;display:flex;flex-wrap:wrap;gap:10px}
-  .ascend{
-    display:inline-flex;align-items:center;
-    background:none;border:1px solid color-mix(in srgb, var(--accent-soft) 34%, transparent);color:var(--bone);
-    font-family:var(--mincho);font-size:1rem;letter-spacing:.04em;
-    padding:9px 20px 10px;cursor:pointer;border-radius:2px;
-    transition:border-color 1.2s ease,color 1.2s ease,background .3s ease;
-  }
-  .ascend:hover{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent)}
-  .ascend:active{transform:translateY(1px)}
-  .ascend[disabled]{cursor:default;opacity:.34}
-  .ascend[disabled]:hover{border-color:color-mix(in srgb, var(--accent-soft) 34%, transparent);
-    background:none}
-
-  .caption{text-align:center;font-family:var(--mincho);font-size:15.5px;line-height:1.5;
-    letter-spacing:.01em;color:#A6A9B2;margin:28px 0 12px;padding:0 26px;
-    min-height:0;transition:min-height .6s cubic-bezier(.35,.84,.28,1)}
-  .caption span{transition:opacity .45s ease}
-  .caption .src{display:block;margin-top:5px;font-family:var(--mono);font-size:10px;
-    letter-spacing:.13em;color:var(--muted)}
-  body[data-lang="zh"] .caption{letter-spacing:.06em}
-
-  /* ---- scene ---- */
-  #corner{width:100%;height:auto;display:block;overflow:visible;pointer-events:none}
-  /* one art pixel = 3 CSS px, always. The strip runs edge to edge at a
-     fixed height; on wide screens the WORLD gets wider (procedural hills,
-     clouds and stars extend the panorama), not the pixels bigger. */
-  .sky{flex:0 0 auto;width:100%;height:240px;display:block;margin-top:8px;
-    pointer-events:none;content-visibility:auto;contain-intrinsic-size:auto 240px}
-  svg rect,svg polygon,svg use{shape-rendering:crispEdges}
-  .px{transition:fill 1.2s ease}
-  .hill{transition:fill 1.4s ease}
-  .cam{transition:transform 2s cubic-bezier(.34,.85,.28,1)}
-
-  /* balloon leads, shed lags: the rigging reads as a pendulum */
-  .bobA{animation:bob 6.4s ease-in-out infinite alternate}
-  .bobB{animation:bob 6.4s ease-in-out .42s infinite alternate}
-  @keyframes bob{from{transform:translateY(-1px)}to{transform:translateY(1px)}}
-  .tilt{animation:tilt 11s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 12%}
-  @keyframes tilt{from{transform:rotate(-1.6deg)}to{transform:rotate(1.4deg)}}
-
-  /* distance and duration are set per-world-width in JS so the drift
-     SPEED stays constant however wide the panorama is */
-  .drift{animation:drift 78s linear infinite}
-  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(var(--drift,-640px))}}
-  /* phones see a ~280-unit window: the craft hovers in frame instead of
-     touring the loop and vanishing for half of it */
-  .sway{animation:sway 26s ease-in-out infinite alternate}
-  @keyframes sway{from{transform:translateX(-30px)}to{transform:translateX(30px)}}
-  .cd1{animation:clouddrift 96s linear infinite}
-  .cd2{animation:clouddrift 64s linear infinite}
-  .cd3{animation:clouddrift 41s linear infinite}
-  @keyframes clouddrift{from{transform:translateX(0)}to{transform:translateX(var(--drift,-640px))}}
-
-  /* three-frame propeller, flipped rather than squashed */
-  .pf{animation:flip .21s steps(1) infinite}
-  .pf2{animation-delay:.07s}
-  .pf3{animation-delay:.14s}
-  @keyframes flip{0%{opacity:1}33.4%{opacity:0}100%{opacity:0}}
-
-  .puff{animation:puff 3.4s ease-out infinite;transform-box:fill-box}
-  @keyframes puff{
-    0%{opacity:0;transform:translate(0,0) scale(.5)}
-    18%{opacity:.85}
-    100%{opacity:0;transform:translate(var(--shear,4px),-16px) scale(1.8)}
-  }
-  .star{animation:twinkle 3.6s ease-in-out infinite alternate}
-  @keyframes twinkle{0%{opacity:.2}100%{opacity:1}}
-  .glowpulse{animation:glowpulse 5.2s ease-in-out infinite alternate}
-  @keyframes glowpulse{from{opacity:.7}to{opacity:1}}
-  /* every few seconds the burner fires and the envelope glows like a lantern */
-  .burnflare{opacity:0;animation:burnfire 5.5s ease-in-out infinite}
-  @keyframes burnfire{0%,70%,93%,100%{opacity:0}76%,86%{opacity:1}}
-  .glint{opacity:0;animation:glint 4.7s linear 1.2s infinite}
-  @keyframes glint{0%,90%,100%{opacity:0}93%,95%{opacity:.9}}
-  .sparkarm{opacity:0;animation:sparkle 7.3s steps(1) infinite}
-  @keyframes sparkle{0%,90%,100%{opacity:0}93%,97%{opacity:.85}}
-  .firefly{animation:firefly 5.6s ease-in-out infinite alternate}
-  @keyframes firefly{from{opacity:.06}60%{opacity:.14}to{opacity:.95}}
-  /* the window's spill brightens where the sky is darkest */
-  .cone{opacity:.55;transition:opacity 1.2s ease}
-  body[data-band="2"] .cone,body[data-band="3"] .cone{opacity:1}
-  .wingA{animation:flap 1.1s steps(1) infinite}
-  .wingB{animation:flap 1.1s steps(1) .55s infinite}
-  @keyframes flap{0%{opacity:1}50%{opacity:0}100%{opacity:0}}
-  .meteor{animation:meteor var(--mdur,17s) linear var(--mdel,0s) infinite;
-    transform-box:fill-box}
-  @keyframes meteor{
-    0%,90%{opacity:0;transform:translate(0,0)}
-    92%{opacity:.95}
-    96.5%{opacity:.8}
-    98.5%,100%{opacity:0;transform:translate(var(--mx,76px),var(--my,44px))}
-  }
-  .pixel{opacity:0;animation:pop .38s cubic-bezier(.2,1.4,.5,1) var(--d) forwards}
-  @keyframes pop{from{opacity:0;transform:translateY(2px) scale(.4)}to{opacity:1;transform:none}}
-  @keyframes draw{to{stroke-dashoffset:0}}
-
-  /* reduced motion: freeze a composed scene rather than blanking it */
   @media(prefers-reduced-motion:reduce){
-    .seam path{animation:none;stroke-dashoffset:0}
-    .bobA,.bobB,.tilt,.drift,.sway,.cd1,.cd2,.cd3,.star,.wingA,.glowpulse,
-    .burnflare,.glint,.sparkarm,.firefly{animation:none}
-    .pixel{animation:none;opacity:1}
-    .puff{animation:none;opacity:.4}
-    .pf{animation:none;opacity:0}
-    .pf1{opacity:1}
-    .wingB,.meteor{display:none}
-    .cam{transition:none}
+    *{transition:none!important}
   }
 </style>
 </head>
 <body data-lang="en">
 
+<header class="hero" id="hero">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <button class="lang pxbtn" id="lang" type="button" aria-label="Switch language"><span class="t-en">中文</span><span class="t-zh">EN</span></button>
+  <div class="wrap hero-top">
+    <h1><span class="nm" id="nm">Logan Mondal Bhamidipaty</span><span class="zh t-zh" lang="zh-Hans">罗根</span></h1>
+    <p class="role"><span class="t-en" lang="en">AI PhD student · University of Edinburgh</span><span
+      class="t-zh" lang="zh-Hans">人工智能博士生 · 爱丁堡大学</span></p>
+  </div>
+  <div class="hero-foot">
+    <div class="wrap">
+      <p class="caption" id="cap" role="status" aria-live="polite"></p>
+      <div class="alt" role="group" aria-label="Altitude">
+        <button class="pxbtn" id="btndown" type="button" aria-label="descend">
+          <svg viewBox="0 0 7 4" aria-hidden="true"><path d="M0 0h7v1H6v1H5v1H4v1H3V3H2V2H1V1H0z"/></svg>
+          <span class="t-en" lang="en">down</span><span class="t-zh" lang="zh-Hans">下降</span>
+        </button>
+        <div class="readout"><b id="altm">400 m</b><span id="altname">ground haze</span></div>
+        <button class="pxbtn" id="btn" type="button" aria-label="ascend">
+          <span class="t-en" lang="en">up</span><span class="t-zh" lang="zh-Hans">上升</span>
+          <svg viewBox="0 0 7 4" aria-hidden="true"><path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
 <main>
-  <button class="lang" id="lang" type="button" aria-label="Switch language"><span class="t-en">中文</span><span class="t-zh">English</span></button>
-  <figure class="photo"><svg id="corner" viewBox="0 0 64 86" aria-hidden="true"></svg></figure>
+  <div class="wrap">
+    <p class="body lede t-en" lang="en">I'm an AI PhD student at the University of Edinburgh, co-advised by
+      <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a> (Edinburgh) and
+      <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a> (Stanford).
+      I'm currently an Anthropic Research Fellow.</p>
 
-  <h1>Logan Mondal Bhamidipaty<span class="zh t-zh" lang="zh-Hans">罗根</span></h1>
-  <svg class="seam" viewBox="0 0 600 9" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0,5 L118,3 L214,7 L342,2 L458,6 L600,4"/>
-  </svg>
-  <p class="role"><span class="t-en" lang="en">AI PhD Student · University of Edinburgh</span><span
-    class="t-zh" lang="zh-Hans">人工智能博士生 · 爱丁堡大学</span></p>
+    <p class="body t-en" lang="en">Previously, I studied math (BS) and CS/AI (MS) at Stanford where I was
+      fortunate to work with many amazing mentors including
+      <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>,
+      <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a>, and
+      <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a>. I also worked
+      concurrently as an economic consultant with
+      <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> at
+      <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a>.</p>
 
-  <p class="body t-en" lang="en">I'm an AI PhD student at the University of Edinburgh, co-advised by
-    <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a> (Edinburgh) and
-    <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a> (Stanford).
-    I'm currently an Anthropic Research Fellow.</p>
+    <p class="body t-en" lang="en"><em>I'm broadly interested in RL, AI alignment, and game theory.</em></p>
 
-  <p class="body t-en" lang="en">Previously, I studied math (BS) and CS/AI (MS) at Stanford where I was
-    fortunate to work with many amazing mentors including
-    <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>,
-    <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a>, and
-    <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a>. I also worked
-    concurrently as an economic consultant with
-    <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> at
-    <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a>.</p>
+    <p class="body lede t-zh" lang="zh-Hans">我是爱丁堡大学人工智能方向的博士生，由
+      <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a>（爱丁堡）与
+      <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a>（斯坦福）联合指导，目前也是 Anthropic Research Fellow。</p>
 
-  <p class="body t-en" lang="en"><em>I'm broadly interested in RL, AI alignment, and game theory.</em></p>
+    <p class="body t-zh" lang="zh-Hans">此前我在斯坦福取得数学学士与计算机科学／人工智能硕士学位，有幸受教于
+      <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>、
+      <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a> 与
+      <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a> 等多位老师。同期我还在
+      <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a> 担任经济顾问，与
+      <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> 共事。</p>
 
-  <p class="body t-zh" lang="zh-Hans">我是爱丁堡大学人工智能方向的博士生，由
-    <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a>（爱丁堡）与
-    <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a>（斯坦福）联合指导，目前也是 Anthropic Research Fellow。</p>
+    <p class="body t-zh" lang="zh-Hans"><em>我的研究兴趣主要在强化学习、人工智能对齐与博弈论。</em></p>
 
-  <p class="body t-zh" lang="zh-Hans">此前我在斯坦福取得数学学士与计算机科学／人工智能硕士学位，有幸受教于
-    <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>、
-    <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a> 与
-    <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a> 等多位老师。同期我还在
-    <a href="https://www.auctionomics.com/" rel="noopener">Auctionomics</a> 担任经济顾问，与
-    <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> 共事。</p>
-
-  <p class="body t-zh" lang="zh-Hans"><em>我的研究兴趣主要在强化学习、人工智能对齐与博弈论。</em></p>
-
-  <ul class="links">
-    <li><a id="mail" href="#"><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
-    <li><a href="https://github.com/FlyingWorkshop" rel="me">GitHub <span class="id">(FlyingWorkshop)</span></a></li>
-    <li><a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/logan_bhamidipaty_short_cv.pdf"><span class="t-en" lang="en">CV</span><span class="t-zh" lang="zh-Hans">简历</span></a></li>
-    <li><a href="https://scholar.google.com/citations?user=wJ_Eo0sAAAAJ&amp;hl=en"><span class="t-en" lang="en">Scholar</span><span class="t-zh" lang="zh-Hans">学术主页</span></a></li>
-    <li><a href="https://flyingworkshop.github.io/Desmos-Creations/">Desmos</a></li>
-  </ul>
-
-  <section>
-    <h2><span class="t-en" lang="en">News</span><span class="t-zh" lang="zh-Hans">近况</span></h2>
-    <ul id="newslist">
-      <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Two workshop papers at RLC 2026 in Montreal.</span><span class="t-zh" lang="zh-Hans">两篇 workshop 论文入选蒙特利尔 RLC 2026。</span></span></li>
-      <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Started Anthropic research fellowship.</span><span class="t-zh" lang="zh-Hans">开始 Anthropic 研究员项目。</span></span></li>
-      <li><span class="date"><span class="t-en" lang="en">Jul 2026</span><span class="t-zh" lang="zh-Hans">2026年7月</span></span><span><span class="t-en" lang="en">New preprint: RENEW, on repairing model exploitation from preferences.</span><span class="t-zh" lang="zh-Hans">新预印本：RENEW，用偏好修复世界模型的可利用性。</span></span></li>
-      <li><span class="date"><span class="t-en" lang="en">May 2026</span><span class="t-zh" lang="zh-Hans">2026年5月</span></span><span><span class="t-en" lang="en">New preprint: Imperfect World Models are Exploitable.</span><span class="t-zh" lang="zh-Hans">新预印本：Imperfect World Models are Exploitable。</span></span></li>
-      <li><span class="date"><span class="t-en" lang="en">Sep 2025</span><span class="t-zh" lang="zh-Hans">2025年9月</span></span><span><span class="t-en" lang="en">Started the PhD in Edinburgh.</span><span class="t-zh" lang="zh-Hans">开始在爱丁堡读博。</span></span></li>
+    <ul class="links">
+      <li><a class="chip" id="mail" href="#"><svg class="ico" data-icon="mail" aria-hidden="true"></svg><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
+      <li><a class="chip" href="https://github.com/FlyingWorkshop" rel="me"><svg class="ico" data-icon="code" aria-hidden="true"></svg>GitHub <span class="id">FlyingWorkshop</span></a></li>
+      <li><a class="chip" href="https://logan-mondal-bhamidipaty.com/assets/pdfs/logan_bhamidipaty_short_cv.pdf"><svg class="ico" data-icon="scroll" aria-hidden="true"></svg><span class="t-en" lang="en">CV</span><span class="t-zh" lang="zh-Hans">简历</span></a></li>
+      <li><a class="chip" href="https://scholar.google.com/citations?user=wJ_Eo0sAAAAJ&amp;hl=en"><svg class="ico" data-icon="cap" aria-hidden="true"></svg><span class="t-en" lang="en">Scholar</span><span class="t-zh" lang="zh-Hans">学术主页</span></a></li>
+      <li><a class="chip" href="https://flyingworkshop.github.io/Desmos-Creations/"><svg class="ico" data-icon="graph" aria-hidden="true"></svg>Desmos</a></li>
     </ul>
-    <button class="more" id="more" aria-expanded="false" aria-controls="newslist">earlier</button>
-  </section>
 
-  <section>
-    <h2><span class="t-en" lang="en">Research</span><span class="t-zh" lang="zh-Hans">研究</span></h2>
-    <ul>
-      <li><span class="date">2026</span><span>RENEW: towards learning world models and repairing model exploitation from preferences
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer,
-          Subramanian Ramamoorthy</span>
-        <span class="meta"><span class="venue"><span class="t-en" lang="en">Finding the Frame Workshop, RLC</span><span class="t-zh" lang="zh-Hans">Finding the Frame Workshop, RLC</span></span> ·
-        <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/renew_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+    <section>
+      <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">News</span><span class="t-zh" lang="zh-Hans">近况</span></h2>
+      <ul id="newslist">
+        <li><span class="date"><span class="t-en" lang="en">Oct 2026</span><span class="t-zh" lang="zh-Hans">2026年10月</span></span><span><span class="t-en" lang="en">New preprint: BIRD, a benchmark for iterative reward design.</span><span class="t-zh" lang="zh-Hans">新预印本：BIRD，迭代式奖励设计的基准。</span></span></li>
+        <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Two workshop papers at RLC 2026 in Montreal.</span><span class="t-zh" lang="zh-Hans">两篇 workshop 论文入选蒙特利尔 RLC 2026。</span></span></li>
+        <li><span class="date"><span class="t-en" lang="en">Aug 2026</span><span class="t-zh" lang="zh-Hans">2026年8月</span></span><span><span class="t-en" lang="en">Started Anthropic research fellowship.</span><span class="t-zh" lang="zh-Hans">开始 Anthropic 研究员项目。</span></span></li>
+        <li><span class="date"><span class="t-en" lang="en">Jul 2026</span><span class="t-zh" lang="zh-Hans">2026年7月</span></span><span><span class="t-en" lang="en">New preprint: RENEW, on repairing model exploitation from preferences.</span><span class="t-zh" lang="zh-Hans">新预印本：RENEW，用偏好修复世界模型的可利用性。</span></span></li>
+        <li><span class="date"><span class="t-en" lang="en">May 2026</span><span class="t-zh" lang="zh-Hans">2026年5月</span></span><span><span class="t-en" lang="en">New preprint: Imperfect World Models are Exploitable.</span><span class="t-zh" lang="zh-Hans">新预印本：Imperfect World Models are Exploitable。</span></span></li>
+        <li><span class="date"><span class="t-en" lang="en">Sep 2025</span><span class="t-zh" lang="zh-Hans">2025年9月</span></span><span><span class="t-en" lang="en">Started the PhD in Edinburgh.</span><span class="t-zh" lang="zh-Hans">开始在爱丁堡读博。</span></span></li>
+      </ul>
+      <button class="pxbtn more" id="more" type="button" aria-expanded="false" aria-controls="newslist">earlier</button>
+    </section>
 
-      <li><span class="date">2026</span><span>Imperfect world models are exploitable
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
-          David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
-        <span class="meta"><span class="venue"><span class="t-en" lang="en">RL in Big Worlds Workshop, RLC</span><span class="t-zh" lang="zh-Hans">RL in Big Worlds Workshop, RLC</span></span> ·
-        <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+    <section>
+      <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Research</span><span class="t-zh" lang="zh-Hans">研究</span></h2>
+      <ul>
+        <li><span class="date">2026</span><span><span class="title">A bird's-eye view of iterative reward design</span><span class="new">new</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Lauren Robson, Linda Petrini,
+            Shengrui Lyu, Kamal Ndousse</span>
+          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
+          <a href="https://arxiv.org/abs/2610.04364" rel="noopener">arXiv</a></span></span></li>
 
-      <li><span class="date">2025</span><span>Repairing reward functions with feedback to mitigate reward hacking
-        <span class="authors">Stephane Hatgis-Kessell, <span class="me">Logan Mondal Bhamidipaty</span>,
-          Emma Brunskill</span>
-        <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
-        <a href="https://arxiv.org/abs/2510.13036" rel="noopener">arXiv</a></span></span></li>
+        <li><span class="date">2026</span><span><span class="title">RENEW: towards learning world models and repairing model exploitation from preferences</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer,
+            Subramanian Ramamoorthy</span>
+          <span class="meta"><span class="venue">Finding the Frame Workshop, RLC</span> ·
+          <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a> ·
+          <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/renew_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
 
-      <li><span class="date">2025</span><span>CompressedBeliefMDPs.jl: a Julia package for solving large POMDPs with belief compression
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer</span>
-        <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
-        <a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-        <a href="https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-        <a href="https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+        <li><span class="date">2026</span><span><span class="title">Imperfect world models are exploitable</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
+            David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
+          <span class="meta"><span class="venue">RL in Big Worlds Workshop, RLC</span> ·
+          <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> ·
+          <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
 
-      <li><span class="date">2025</span><span>ExpFamilyPCA.jl: a Julia package for exponential family principal component analysis
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer, Trevor Hastie</span>
-        <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
-        <a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-        <a href="https://github.com/sisl/ExpFamilyPCA.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-        <a href="https://sisl.github.io/ExpFamilyPCA.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+        <li><span class="date">2025</span><span><span class="title">Repairing reward functions with feedback to mitigate reward hacking</span>
+          <span class="authors">Stephane Hatgis-Kessell, <span class="me">Logan Mondal Bhamidipaty</span>,
+            Emma Brunskill</span>
+          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
+          <a href="https://arxiv.org/abs/2510.13036" rel="noopener">arXiv</a></span></span></li>
 
-      <li><span class="date">2024</span><span>Learning to explore in POMDPs with informational rewards
-        <span class="authors">Annie Xie*, <span class="me">Logan Mondal Bhamidipaty</span>*, Evan Zheran Liu,
-          Joey Hong, Sergey Levine, Chelsea Finn</span>
-        <span class="meta"><span class="venue">ICML</span> ·
-        <a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/images/probe_poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+        <li><span class="date">2025</span><span><span class="title">CompressedBeliefMDPs.jl: a Julia package for solving large POMDPs with belief compression</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer</span>
+          <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
+          <a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+          <a href="https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+          <a href="https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
 
-      <li><span class="date">2023</span><span>DynaDojo: an extensible platform for scaling analysis in dynamical system identification
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Tommy Bruzzese*, Caryn Tran*,
-          Rami Mrad, Max S. Kanwal</span>
-        <span class="meta"><span class="venue">NeurIPS</span> ·
-        <a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-        <a href="https://github.com/DynaDojo/dynadojo" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-        <a href="https://logan-mondal-bhamidipaty.com/assets/images/dynadojo-poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
-    </ul>
-  </section>
+        <li><span class="date">2025</span><span><span class="title">ExpFamilyPCA.jl: a Julia package for exponential family principal component analysis</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer, Trevor Hastie</span>
+          <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
+          <a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+          <a href="https://github.com/sisl/ExpFamilyPCA.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+          <a href="https://sisl.github.io/ExpFamilyPCA.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
 
-  <section>
-    <h2><span class="t-en" lang="en">Teaching</span><span class="t-zh" lang="zh-Hans">教学</span></h2>
-    <ul>
-      <li><span class="date">2024</span><span>Algorithmic game theory course reader
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Eric Gao*, Aviad Rubinstein*</span>
-        <span class="meta"><a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
-      <li><span class="date">2023</span><span>Market design course reader
-        <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Paul Milgrom*, Ellie Morgan Tyger, Lea Nagel</span>
-        <span class="meta"><a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
-    </ul>
-  </section>
+        <li><span class="date">2024</span><span><span class="title">Learning to explore in POMDPs with informational rewards</span>
+          <span class="authors">Annie Xie*, <span class="me">Logan Mondal Bhamidipaty</span>*, Evan Zheran Liu,
+            Joey Hong, Sergey Levine, Chelsea Finn</span>
+          <span class="meta"><span class="venue">ICML</span> ·
+          <a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+          <a href="https://logan-mondal-bhamidipaty.com/assets/images/probe_poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
 
-  <div class="controls">
-    <button class="ascend" id="btn" aria-describedby="cap">
-      <span class="t-en" lang="en">ascend</span><span class="t-zh" lang="zh-Hans">上升</span>
-    </button>
-    <button class="ascend" id="btndown" aria-describedby="cap">
-      <span class="t-en" lang="en">descend</span><span class="t-zh" lang="zh-Hans">下降</span>
-    </button>
+        <li><span class="date">2023</span><span><span class="title">DynaDojo: an extensible platform for scaling analysis in dynamical system identification</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Tommy Bruzzese*, Caryn Tran*,
+            Rami Mrad, Max S. Kanwal</span>
+          <span class="meta"><span class="venue">NeurIPS</span> ·
+          <a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
+          <a href="https://github.com/DynaDojo/dynadojo" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
+          <a href="https://logan-mondal-bhamidipaty.com/assets/images/dynadojo-poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Teaching</span><span class="t-zh" lang="zh-Hans">教学</span></h2>
+      <ul>
+        <li><span class="date">2024</span><span><span class="title">Algorithmic game theory course reader</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Eric Gao*, Aviad Rubinstein*</span>
+          <span class="meta"><a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
+        <li><span class="date">2023</span><span><span class="title">Market design course reader</span>
+          <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Paul Milgrom*, Ellie Morgan Tyger, Lea Nagel</span>
+          <span class="meta"><a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">website</span><span class="t-zh" lang="zh-Hans">网站</span></a></span></span></li>
+      </ul>
+    </section>
   </div>
 </main>
 
-<p class="caption" id="cap" role="status"><span id="captext"></span><span class="src" id="capsrc"></span></p>
-<svg class="sky" id="sky" viewBox="0 0 640 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+<footer>
+  <div class="wrap">
+    <span>FlyingWorkshop · Edinburgh</span>
+    <a href="#hero" id="toTop"><span class="t-en" lang="en">back to the sky ↑</span><span class="t-zh" lang="zh-Hans">回到天空 ↑</span></a>
+  </div>
+</footer>
 
 <script>
 (function(){
-  var NS="http://www.w3.org/2000/svg";
-  var PX=2;                       /* one art pixel = 2 user units, everywhere */
-  /* world width: wide enough that this monitor never scales past 1.5 user
-     units per CSS px (3 px per art pixel). The 640-unit Edinburgh
-     composition sits centred at XOFF; the wings are procedural. */
-  var W=(function(){
-    var px=Math.max((window.screen&&screen.width)||0,innerWidth||0,960);
-    return Math.max(640,Math.ceil(Math.ceil(px/1.5)/320)*320);
+  "use strict";
+  var hero=document.getElementById("hero"),cv=document.getElementById("scene"),
+      ctx=cv.getContext("2d");
+  var RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  /* -------------------------------------------------------------- helpers */
+  var BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+  function bay(x,y){return (BAY[((y&3)<<2)|(x&3)]+0.5)/16;}
+  function hex(h){var n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255];}
+  function mix(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}
+  function css(c){return "rgb("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+")";}
+  function clamp(v,a,b){return v<a?a:v>b?b:v;}
+  function smooth(a,b,x){var t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);}
+  function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);
+    t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+  function canvas(w,h){var c=document.createElement("canvas");c.width=w;c.height=h;return c;}
+  /* banded ramp: flat steps joined by short dithered seams, never a smear */
+  function step(q,x,y){var f=q-Math.floor(q);return Math.floor(q)+(smooth(.3,.7,f)>bay(x,y)?1:0);}
+  function pack(c){return ((255<<24)|(Math.round(c[2])<<16)|(Math.round(c[1])<<8)|Math.round(c[0]))>>>0;}
+  /* paint a key grid (rows of chars, "." = empty) through a palette */
+  function paintGrid(grid,pal,w,h){
+    var c=canvas(w,h),g=c.getContext("2d"),y,x;
+    for(y=0;y<h;y++) for(x=0;x<w;x++){
+      var k=grid[y][x];
+      if(!k) continue;
+      g.fillStyle=pal[k];g.fillRect(x,y,1,1);
+    }
+    return c;
+  }
+
+  /* -------------------------------------------------------- altitude bands */
+  var BANDS=[
+    {cam:0,  m:400,  en:"ground haze", zh:"地面薄霭",accent:"#F2A25C",soft:"#F8D3A0"},
+    {cam:150,m:1200, en:"cloud deck",  zh:"云层",    accent:"#7FC4E8",soft:"#C6E8F7"},
+    {cam:300,m:3000, en:"thin air",    zh:"稀薄空气",accent:"#B3A6F0",soft:"#DCD5FA"},
+    {cam:470,m:9000, en:"stars",       zh:"星空",    accent:"#8FE3C0",soft:"#CDF5E4"}
+  ];
+  var TOPCAM=BANDS[BANDS.length-1].cam;
+
+  /* ----------------------------------------------------------------- sky */
+  /* apparent altitude a: rows above the bottom of the frame plus the camera,
+     parallaxed. Golden horizon, through lavender and blue, into ink. */
+  var SKY=[[0,"#FAD08A"],[10,"#F6B37C"],[24,"#E8957F"],[42,"#C88A98"],[64,"#9C8AB2"],
+           [92,"#7489BC"],[126,"#5A7DBA"],[168,"#4466A6"],[216,"#30508F"],[266,"#223A72"],
+           [318,"#182855"],[372,"#111C3E"],[430,"#0C132B"],[520,"#080B1C"],[700,"#05070F"]]
+           .map(function(s){return [s[0],hex(s[1])];});
+  var DSKY=0.55,SKYLV=4;
+
+  /* ---------------------------------------------------------------- state */
+  var W=0,H=0,S=3,img=null,u8=null,u32=null;
+  var camY=0,camFrom=0,camTo=0,camT0=0,FLY=2400,idx=0,flying=false;
+  var stars=[],clouds=[],cloudSprites=[],sea=null,land=null,windows=[],cat=null,birds=[];
+  var craftX=0,craftY=0,AX=0,SUN={x:0,a:9},MOON={x:0,a:0},AURA=0,STARTOP=0;
+  var running=false,raf=0,lastDraw=0,visible=true;
+
+  function nightAt(c){return smooth(170,430,c);}
+
+  /* ------------------------------------------------------- pixel blending */
+  function blend(x,y,c,a){
+    if(x<0||y<0||x>=W||y>=H||a<=0) return;
+    var i=(y*W+x)*4;
+    u8[i]+=(c[0]-u8[i])*a;u8[i+1]+=(c[1]-u8[i+1])*a;u8[i+2]+=(c[2]-u8[i+2])*a;
+  }
+  function addpx(x,y,c,a){
+    if(x<0||y<0||x>=W||y>=H||a<=0) return;
+    var i=(y*W+x)*4;
+    u8[i]+=c[0]*a;u8[i+1]+=c[1]*a;u8[i+2]+=c[2]*a;
+  }
+
+  /* ================================================================ CRAFT */
+  /* keys: o outline · 1-4 cream gore light→deep · 5-8 tangerine gore ·
+     9/0 teal belt · i sky-bounce rim · H specular · s/S skirt · m/M metal ·
+     h/R/r roof · e eave shadow · c/C/x chimney · L/W/w planks · k/K timber ·
+     f/F brass · g/G lit glass · d/D door · p/P/y window box · q rope */
+  var DAY={o:"#2B1A2A","1":"#FFF3DA","2":"#F6D7A6","3":"#D7A487","4":"#A47280",
+    "5":"#FFB467","6":"#EC8845","7":"#BF5A3C","8":"#83394B","9":"#46A3A0","0":"#2A6670",
+    i:"#B9A9E6",H:"#FFFDF4",s:"#5A3446",S:"#7E4A52",m:"#7D7F99",M:"#C3C6DA",
+    h:"#E58052",R:"#B4523F",r:"#7E3540",e:"#43263A",c:"#8E4B42",C:"#BE7559",x:"#3A2A33",
+    L:"#D69D63",W:"#AB7140",w:"#704532",k:"#3B2730",K:"#5E3C3A",f:"#EBBA58",F:"#9E6E2E",
+    g:"#FFC864",G:"#FFF1BC",d:"#5B3A30",D:"#7C503A",p:"#6DA65A",P:"#F28CA6",y:"#FFE37A",q:"#6A4A3C"};
+  var EMIT={g:1,G:1,y:1,H:0};
+  function nightColor(k,c){
+    if(EMIT[k]) return c;
+    if(k==="i") return hex("#C6D2FA");
+    if(k==="H") return hex("#E4E8FF");
+    return mix([c[0]*.46,c[1]*.5,c[2]*.74],[34,38,88],.34);
+  }
+  var DAYRGB={},NIGHTRGB={};
+  Object.keys(DAY).forEach(function(k){DAYRGB[k]=hex(DAY[k]);NIGHTRGB[k]=nightColor(k,DAYRGB[k]);});
+  var palCache={};
+  function palette(n){
+    var key=Math.round(n*10);
+    if(palCache[key]) return palCache[key];
+    var p={},t=key/10;
+    Object.keys(DAY).forEach(function(k){p[k]=css(mix(DAYRGB[k],NIGHTRGB[k],t));});
+    return (palCache[key]=p);
+  }
+
+  var CW=42,CH=82,BX=21,BT=6,BHT=36,BR=16,HX=6,HY=52;
+  var GA=[],GB=[];
+  (function buildCraft(){
+    var y,x;
+    for(y=0;y<CH;y++){GA.push([]);GB.push([]);for(x=0;x<CW;x++){GA[y].push("");GB[y].push("");}}
+    function A(x,y,k){if(x>=0&&y>=0&&x<CW&&y<CH)GA[y][x]=k;}
+    function B(x,y,k){x+=HX;y+=HY;if(x>=0&&y>=0&&x<CW&&y<CH)GB[y][x]=k;}
+
+    /* envelope: lit from the low sun on the left, seven gores, banded shading */
+    var L=[-0.74,0.26,0.62],ll=Math.sqrt(L[0]*L[0]+L[1]*L[1]+L[2]*L[2]);
+    L=[L[0]/ll,L[1]/ll,L[2]/ll];
+    var rows=[];
+    for(var r=0;r<BHT;r++){
+      var u=(r+.5)/BHT;
+      var w=u<.58?BR*Math.sqrt(Math.max(0,1-Math.pow((.58-u)/.58,2)))
+                 :BR-(BR-2.5)*Math.pow((u-.58)/.42,1.6);
+      var hw=Math.max(1,Math.round(w));
+      rows.push(hw);
+      for(var dx=-hw;dx<=hw;dx++){
+        x=BX+dx;y=BT+r;
+        var nx=dx/(hw+.5),ny=(.45-u)*1.5,nz=Math.sqrt(Math.max(0,1-nx*nx));
+        var len=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+        var s=(nx*L[0]+ny*L[1]+nz*L[2])/len;
+        var lv=clamp(step(clamp((s+.12)/1.02,0,1)*3,x,y),0,3);
+        var phi=Math.asin(clamp(nx,-1,1)),gi=Math.min(6,Math.floor(phi/(Math.PI/2)*3.5+3.5));
+        var k;
+        if(u>.6&&u<.655) k=lv>=2?"9":"0";
+        else if(r<2) k=["4","3","2","1"][lv];
+        else k=(gi%2?["8","7","6","5"]:["4","3","2","1"])[lv];
+        A(x,y,k);
+      }
+    }
+    /* silhouette outline, then a cool rim on the shadow side */
+    var out=[];
+    for(y=BT;y<BT+BHT;y++) for(x=0;x<CW;x++){
+      if(!GA[y][x]) continue;
+      if(!GA[y-1]||!GA[y-1][x]||!GA[y+1][x]||!GA[y][x-1]||!GA[y][x+1]) out.push([x,y]);
+    }
+    out.forEach(function(p){GA[p[1]][p[0]]="o";});
+    for(y=BT+3;y<BT+BHT-4;y++){
+      for(x=CW-1;x>0;x--){ if(GA[y][x]&&GA[y][x]!=="o"){GA[y][x]="i";break;} }
+    }
+    /* a specular catch on the sunward shoulder */
+    [[BX-9,BT+8],[BX-8,BT+8],[BX-9,BT+9],[BX-10,BT+10]].forEach(function(p){A(p[0],p[1],"H");});
+    [[BX-8,BT+9],[BX-7,BT+8],[BX-10,BT+11],[BX-9,BT+10]].forEach(function(p){A(p[0],p[1],"1");});
+
+    /* skirt and burner */
+    A(BX-3,42,"o");for(x=BX-2;x<=BX+2;x++)A(x,42,"s");A(BX+3,42,"o");A(BX-2,42,"S");
+    A(BX-2,43,"o");for(x=BX-1;x<=BX+1;x++)A(x,43,"S");A(BX+2,43,"o");
+    for(x=BX-2;x<=BX+2;x++)A(x,44,"m");A(BX-1,44,"M");
+    for(x=BX-1;x<=BX+1;x++)A(x,45,"F");
+    /* pennant pole */
+    A(BX,0,"f");for(y=1;y<=5;y++)A(BX,y,"m");
+
+    /* ---- the workshop ---- */
+    for(var i=0;i<=5;i++){
+      var x0=10-2*i,x1=19+2*i;
+      for(x=x0;x<=x1;x++){
+        var kk;
+        if(i===0||x===x0||x===x1) kk="o";
+        else if(x===x0+1) kk="h";
+        else if(x===x1-1) kk="r";
+        else if(i===1) kk="h";
+        else if(i===5) kk="r";
+        else kk=((x+(i%2)*2)%4===0)?"r":"R";
+        B(x,i,kk);
+      }
+    }
+    /* chimney stands on the left slope */
+    for(y=-5;y<=2;y++){B(5,y,"o");B(6,y,"C");B(7,y,"c");B(8,y,"o");}
+    for(x=5;x<=8;x++)B(x,-6,"o");
+    B(6,-5,"x");B(7,-5,"x");
+    for(x=0;x<=29;x++) B(x,6,"o");
+    /* walls: lit plank, plank, seam */
+    for(y=7;y<=16;y++) for(x=1;x<=28;x++){
+      var kw;
+      if(x===1||x===28) kw="o";
+      else if(x===2||x===27) kw="k";
+      else if(y===7) kw="e";
+      else {var m=(y-8)%3;kw=m===0?"L":m===1?"W":"w";}
+      B(x,y,kw);
+    }
+    /* porthole */
+    for(var py=-4;py<=4;py++) for(var px=-4;px<=4;px++){
+      var d=Math.sqrt(px*px+py*py);
+      if(d>3.6) continue;
+      var kp=d>2.6?(px+py<0?"f":"F"):(px===0||py===0)?"F":(px+py<-1?"G":"g");
+      B(10+px,11+py,kp);
+    }
+    /* window box under it */
+    for(x=6;x<=14;x++){B(x,15,"K");B(x,16,"k");}
+    B(5,15,"o");B(15,15,"o");B(5,16,"o");B(15,16,"o");
+    [[6,"p"],[7,"P"],[13,"y"],[14,"p"]].forEach(function(p){B(p[0],14,p[1]);});
+    [[6,"p"],[14,"p"]].forEach(function(p){B(p[0],13,p[1]);});
+    B(8,14,"p");B(12,14,"p");
+    /* door */
+    for(y=9;y<=16;y++) for(x=19;x<=24;x++){
+      var kd=(x===19||x===24||y===9)?"o":((x===21||x===22)&&(y===11||y===12))?"g":x===22?"d":"D";
+      B(x,y,kd);
+    }
+    B(23,14,"f");
+    /* lantern by the door post */
+    B(26,8,"m");B(25,9,"F");B(26,9,"F");B(25,10,"G");B(26,10,"g");B(25,11,"F");B(26,11,"F");
+    /* keel, riveted */
+    for(x=0;x<=29;x++) B(x,17,(x===0||x===29)?"o":(x%4===2?"f":"K"));
+    for(x=1;x<=28;x++) B(x,18,(x===1||x===28)?"o":"k");
+    for(x=3;x<=26;x++) B(x,19,"o");
+    /* propeller mount */
+    B(29,12,"m");B(30,12,"m");B(31,12,"M");
   })();
-  var XOFF=(W-640)/2;             /* where the original composition starts */
-  var K=W/640;                    /* how much more world there is */
-  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a){e.setAttribute(k,a[k]);}return e;}
-  function use(ref,x,y){
-    var u=el("use",{x:x,y:y});
-    u.setAttribute("href",ref);
-    u.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",ref);
-    return u;
+
+  var craftCache={};
+  function craftImgs(n){
+    var key=Math.round(n*10);
+    if(craftCache[key]) return craftCache[key];
+    var p=palette(n);
+    return (craftCache[key]={a:paintGrid(GA,p,CW,CH),b:paintGrid(GB,p,CW,CH)});
   }
-  function q(v){return Math.round(v/PX)*PX;}   /* snap to the grid */
 
-  /* ------------------------------------------------------------------ art */
-  /* 0 outline  1 timber dark  2 wall  3 roof/plank  4 balloon shade
-     5 balloon  6 balloon light  7 lit glass  8 cloud  9 rim left
-     A rim right  B rope  C metal                              32 x 43 px  */
-  var CRAFT=[
-    "................................",
-    "............00000000............",
-    "..........906656655400..........",
-    "........996655666644450A........",
-    ".......96665556655444455A.......",
-    "......9666555565554444555A......",
-    ".....966655554555544444555A.....",
-    ".....966655444555544444555A.....",
-    "....95666544455555544445554A....",
-    "....96665444455555544445555A....",
-    "....96654444455555544444555A....",
-    "....95554444455555544444555A....",
-    "....95554444455555544444554A....",
-    "....95554444455555544444544A....",
-    "....95555444455555544444444A....",
-    "....94555444455555544444444A....",
-    ".....055544444555544444444A.....",
-    ".....055544444555544444444A.....",
-    "......05554444555444444440......",
-    ".......055444455444444440.......",
-    "........0054444444444400........",
-    "..........004444444400..........",
-    "...........0444444440...........",
-    "............04444440............",
-    ".............0C77C0.............",
-    ".............BB..BB.............",
-    "............B.B..B.BCC..........",
-    "..........B...B..B..CC..........",
-    ".........B....B..B..CCB.........",
-    "........B.....B..B..CC.B........",
-    ".........03333333333330.........",
-    ".......033333333333333330.......",
-    ".....0333333333333333333330.....",
-    ".......011111111111111110.......",
-    ".......012222222770772210.......",
-    ".......012222213770773210.......",
-    ".......012111122000002210.......",
-    ".......012133123770773210CC.....",
-    ".......012133122770772210.......",
-    ".......01213C121333332210.......",
-    ".......012133122222221210.......",
-    ".......011111111111111110.......",
-    "..........000000000000.........."
-  ];
-  var BALLOON_ROWS=25;            /* rows 0-24 lead, 25-42 swing after them */
+  /* quantised bloom: three opacity bands, the outer one checkered so light
+     dissolves into the sky instead of ringing */
+  var glowCache={};
+  function glow(r,col){
+    var key=r+col;
+    if(glowCache[key]) return glowCache[key];
+    var c=canvas(2*r+1,2*r+1),g=c.getContext("2d"),y,x;
+    g.fillStyle=col;
+    for(y=-r;y<=r;y++) for(x=-r;x<=r;x++){
+      var d=Math.sqrt(x*x+y*y),a=0;
+      if(d>r) continue;
+      if(d>r*.72) a=((x+y)&1)?0:.22; else a=d>r*.42?.36:.6;
+      if(!a) continue;
+      g.globalAlpha=a;g.fillRect(x+r,y+r,1,1);
+    }
+    return (glowCache[key]=c);
+  }
+  function drawGlow(cx,cy,r,col,a){
+    var gimg=glow(r,col);
+    ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=a;
+    ctx.drawImage(gimg,Math.round(cx)-r,Math.round(cy)-r);
+    ctx.restore();
+  }
 
-  /* S pixels are the sunlit rim: undersides catch the low sun, and keep a
-     pale moonlit edge at night instead of inverting with the body tones */
-  var CLOUDS=[
-    ["..88..",".S888.",".S444."],
-    ["...888....","..88888...",".S88888888","..SS44444."],
-    ["....8888........","..888888888.....",".S888888888888..",
-     "S888888888888888","..SSS444444444.."]
-  ];
-  var BIRD=[["0...0",".000."],[".000.","0...0"]];
+  function line(x0,y0,x1,y1,col){
+    x0=Math.round(x0);y0=Math.round(y0);x1=Math.round(x1);y1=Math.round(y1);
+    var dx=Math.abs(x1-x0),sx=x0<x1?1:-1,dy=-Math.abs(y1-y0),sy=y0<y1?1:-1,err=dx+dy;
+    ctx.fillStyle=col;
+    for(;;){
+      ctx.fillRect(x0,y0,1,1);
+      if(x0===x1&&y0===y1) break;
+      var e2=2*err;
+      if(e2>=dy){err+=dy;x0+=sx;}
+      if(e2<=dx){err+=dx;y0+=sy;}
+    }
+  }
 
-  /* ------------------------------------------------------- altitude bands */
-  var SKIES=[
-    {name:"Ground haze",note:"400 m · thermals rising",shift:0,stars:0,shear:"4px",
-     accent:"#E8A552",soft:"#F6D9A8",far:"#5C4E6E",mid:"#3A2F48",near:"#1C1626",
-     pal:{0:"#241A12",1:"#553A22",2:"#8A5C36",3:"#B07A44",4:"#B4703C",5:"#E8A552",
-          6:"#F8DDA8",7:"#FFE9A8",8:"#F2CDA0",9:"#FFF0C4",A:"#7A4526",B:"#3A2A1C",C:"#C9A88A",
-          S:"#FFF0C4"}},
-    {name:"Cloud deck",note:"1,200 m · clear, light chop",shift:150,stars:.12,shear:"7px",
-     accent:"#4FA9D8",soft:"#BFE4F5",far:"#7FA4B8",mid:"#4E7186",near:"#2A414E",
-     pal:{0:"#1A2430",1:"#33454F",2:"#4E6472",3:"#6E8895",4:"#2F7EA8",5:"#4FA9D8",
-          6:"#BFE4F5",7:"#FFF2C4",8:"#FFFFFF",9:"#EAF7FF",A:"#256A90",B:"#22323C",C:"#A9C4D2",
-          S:"#FFFFFF"}},
-    {name:"Thin air",note:"3,000 m · tailwind",shift:300,stars:.5,shear:"11px",
-     accent:"#8E86DE",soft:"#CFC7F5",far:"#3A3358",mid:"#241E3C",near:"#141024",
-     pal:{0:"#171227",1:"#2E2648",2:"#4A3E70",3:"#61538F",4:"#C4BCEE",5:"#8E86DE",
-          6:"#453A7A",7:"#FFD9A0",8:"#B9B2E4",9:"#2A2350",A:"#EDE7FF",B:"#221C38",C:"#9A93C4",
-          S:"#D8D2F4"}},
-    {name:"Stars",note:"9,000 m · no traffic",shift:450,stars:1,shear:"15px",
-     accent:"#7FA6E8",soft:"#C7D9F7",far:"#1E2C48",mid:"#131B2E",near:"#0A0F1A",
-     pal:{0:"#0C1220",1:"#1E2A40",2:"#31415F",3:"#465C86",4:"#9BBAF0",5:"#5C7FBE",
-          6:"#2A3E62",7:"#FFE08A",8:"#9FB4D8",9:"#101828",A:"#EAF2FF",B:"#141B28",C:"#8296B4",
-          S:"#C7D4EE"}}
-  ];
+  function drawCraft(t){
+    var n=nightAt(camY),p=palette(n),im=craftImgs(n);
+    var ox=craftX+Math.round(Math.sin(t*.13)*3),oy=craftY;
+    /* balloon leads, shed lags: the rigging reads as a pendulum */
+    var ya=oy+Math.round(Math.sin(t*1.1)*1.2),yb=oy+Math.round(Math.sin(t*1.1-.7)*1.2);
 
-  /* ------------------------------------------------------------ sprites */
-  /* adjacent same-colour pixels merge into one rect: identical on screen,
-     roughly a third of the nodes to paint and recolour */
-  function sprite(art,pal,opt){
-    opt=opt||{};
-    var g=el("g",{}),r,c,h=art.length,r0=opt.from||0,r1=opt.to==null?h:opt.to;
-    for(r=r0;r<r1;r++){
-      var row=art[r];
-      for(c=0;c<row.length;){
-        var ch=row[c];
-        if(ch==="."){c++;continue;}
-        var c0=c;
-        while(c<row.length&&row[c]===ch) c++;
-        var rect=el("rect",{x:c0*PX,y:r*PX,width:(c-c0)*PX,height:PX,
-          fill:pal[ch],"data-k":ch,"class":"px"});
-        if(opt.pop){rect.setAttribute("class","px pixel");
-                    rect.style.setProperty("--d",(0.1+(h-r)*0.02).toFixed(3)+"s");}
-        g.appendChild(rect);
+    /* ropes from the load tapes to the eaves and the ridge */
+    line(ox+BX-8,ya+BT+31,ox+HX+1,yb+HY+5,p.q);
+    line(ox+BX+8,ya+BT+31,ox+HX+28,yb+HY+5,p.q);
+    line(ox+BX-2,ya+45,ox+HX+10,yb+HY,p.q);
+    line(ox+BX+2,ya+45,ox+HX+19,yb+HY,p.q);
+
+    ctx.drawImage(im.b,ox,yb);
+
+    /* rope ladder, swinging a beat behind the hull */
+    var sw=Math.sin(t*1.25-.4);
+    for(var r=20;r<=29;r++){
+      var off=Math.round(sw*(r-20)/9*1.6);
+      ctx.fillStyle=p.q;
+      ctx.fillRect(ox+HX+8+off,yb+HY+r,1,1);
+      ctx.fillRect(ox+HX+11+off,yb+HY+r,1,1);
+      if(r===22||r===25||r===28){ctx.fillStyle=p.D;ctx.fillRect(ox+HX+9+off,yb+HY+r,2,1);}
+    }
+
+    /* propeller: three edge-on frames */
+    var pf=[0,1,2,1][Math.floor(t*14)%4],span=[4,2,0][pf];
+    ctx.fillStyle=p.M;ctx.fillRect(ox+HX+32,yb+HY+12-span,1,span*2+1);
+    ctx.fillStyle=p.m;ctx.fillRect(ox+HX+32,yb+HY+12,1,1);
+    ctx.save();ctx.globalAlpha=.18;ctx.fillStyle=p.M;
+    ctx.fillRect(ox+HX+32,yb+HY+8,1,9);ctx.restore();
+
+    ctx.drawImage(im.a,ox,ya);
+
+    /* pennant, two frames */
+    var fl=Math.floor(t*2.6)%2;
+    ctx.fillStyle=p["9"];
+    if(fl){ctx.fillRect(ox+BX+1,ya+1,4,1);ctx.fillRect(ox+BX+1,ya+2,3,1);ctx.fillRect(ox+BX+1,ya+3,1,1);}
+    else  {ctx.fillRect(ox+BX+1,ya+1,3,1);ctx.fillRect(ox+BX+1,ya+2,4,1);ctx.fillRect(ox+BX+1,ya+3,2,1);}
+
+    /* every so often the burner fires and the envelope glows from inside */
+    var ph=t%6.4,fire=!RM&&ph>4.7&&ph<5.5;
+    if(fire){
+      var ff=Math.floor(t*12)%2;
+      ctx.fillStyle=p.G;ctx.fillRect(ox+BX,ya+43,1,1);ctx.fillRect(ox+BX,ya+42-ff,1,1);
+      ctx.fillStyle=p.g;ctx.fillRect(ox+BX-1+ff*2,ya+43,1,1);ctx.fillRect(ox+BX,ya+41,1,1);
+      drawGlow(ox+BX,ya+40,11,"#FFB45A",.55);
+      drawGlow(ox+BX,ya+30,15,"#FF9A4A",.22);
+    }
+    /* the workshop is lived in: window, door and lantern all spill light */
+    var warm=.18+.72*n,breathe=.85+.15*Math.sin(t*1.7);
+    drawGlow(ox+HX+10,yb+HY+11,9,"#FFC468",warm*breathe*.75);
+    drawGlow(ox+HX+25.5,yb+HY+10,6,"#FFC468",warm*breathe);
+    drawGlow(ox+HX+21.5,yb+HY+11.5,5,"#FFC468",warm*.5);
+    drawGlow(ox+HX+16,yb+HY+24,12,"#FFB860",warm*.28);
+
+    /* chimney smoke drifts downwind and thins out */
+    var smoke=n>.5?mix(hex("#D9D2E6"),hex("#7A78A6"),n):mix(hex("#F2E3DA"),hex("#D9D2E6"),n*2);
+    ctx.fillStyle=css(smoke);
+    for(var i=0;i<7;i++){
+      var age=((t+i*.62)%4.3),a=.6*(1-age/4.3);
+      var sx=ox+HX+6.5+age*2.6+Math.sin(age*2.2+i)*.8,sy=yb+HY-7-age*5.2;
+      var sz=age<1.1?1:2;
+      ctx.globalAlpha=a;ctx.fillRect(Math.round(sx),Math.round(sy),sz,sz);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  /* =============================================================== CLOUDS */
+  var CLOUD_DAY=["#C68FA2","#EEBFB0","#FFE3C8","#FFF6E6"].map(hex),
+      CLOUD_NIGHT=["#2C3263","#4B548F","#7F88C2","#C3CAF2"].map(hex);
+  function cloudSprite(w,h,seed){
+    var r=rng(seed),blobs=[],n=Math.max(3,Math.round(w/8)),i,x,y;
+    for(i=0;i<n;i++){
+      var dome=Math.sin(Math.PI*(i+.5)/n);
+      var rad=h*(.26+.5*dome)*(.85+.3*r());
+      var cx=rad+(w-2*rad)*(i+.5)/n+(r()-.5)*3;
+      var cy=h-2-rad*(.62+r()*.2);
+      blobs.push([cx,Math.max(rad,cy),rad]);
+    }
+    var mask=[],tone=[];
+    for(y=0;y<h;y++){mask.push([]);tone.push([]);
+      for(x=0;x<w;x++){
+        var best=-1,bv=0;
+        if(y<h-1) blobs.forEach(function(b){
+          var dx=x+.5-b[0],dy=y+.5-b[1],dd=Math.sqrt(dx*dx+dy*dy),inside=b[2]-dd;
+          if(inside>best){best=inside;bv=(-.55*dx-.85*dy)/b[2];}
+        });
+        mask[y].push(best>0);
+        var v=.5+.42*bv-.38*(y/h);
+        tone[y].push(clamp(step(clamp(v,0,1)*2.4,x,y),0,2));
       }
     }
-    return g;
-  }
-  function spriteW(art){return art[0].length*PX;}
-
-  function puffs(parent,pal,n){
-    for(var i=0;i<(n||3);i++){
-      var p=el("rect",{x:20*PX,y:25*PX,width:PX,height:PX,fill:pal[8],opacity:0,
-        "data-k":"8","class":"px puff"});
-      p.style.animationDelay=(i*1.13).toFixed(2)+"s";
-      parent.appendChild(p);
-    }
-  }
-
-  /* three propeller frames on the side mount, flipped in sequence.
-     Drawn in the A tone: dark against the pale low clouds, pale against
-     the dark high sky, so the blades stay legible at every altitude */
-  var PROP=[[[27,34],[27,35],[27,36],[27,38],[27,39],[27,40]],
-            [[26,36],[28,36],[27,37],[26,38],[28,38]],
-            [[26,37],[27,37],[28,37]]];
-  function propeller(pal){
-    var g=el("g",{});
-    PROP.forEach(function(frame,i){
-      var f=el("g",{"class":"pf pf"+(i+1)});
-      frame.forEach(function(p){
-        f.appendChild(el("rect",{x:p[0]*PX,y:p[1]*PX,width:PX,height:PX,
-          fill:pal.A,"data-k":"A","class":"px"}));
-      });
-      g.appendChild(f);
-    });
-    /* an occasional specular catch on the spinning disc */
-    g.appendChild(el("rect",{x:27*PX,y:35*PX,width:PX,height:PX,
-      fill:pal[8],"data-k":"8","class":"px glint"}));
-    return g;
-  }
-
-  /* light spilling from the shop window, pooling in the air under the hull */
-  var CONE=[[42,17,21,.09],[43,17,22,.07],[44,18,23,.05],[45,18,24,.04]];
-  function cone(parent,pal){
-    var outer=el("g",{"class":"cone"}),inner=el("g",{"class":"glowpulse"});
-    CONE.forEach(function(rw){
-      for(var x=rw[1];x<=rw[2];x++){
-        if(rw[3]<.06&&((x+rw[0])&1)) continue;
-        inner.appendChild(el("rect",{x:x*PX,y:rw[0]*PX,width:PX,height:PX,
-          fill:pal[7],"data-k":"7","class":"px",opacity:rw[3]}));
+    function render(pal){
+      var c=canvas(w,h),g=c.getContext("2d");
+      for(y=0;y<h;y++) for(x=0;x<w;x++){
+        if(!mask[y][x]) continue;
+        var t=tone[y][x];
+        var up=y>0&&mask[y-1][x],lf=x>0&&mask[y][x-1];
+        if((!up||!lf)&&t>=1&&y<h*.7) t=3;
+        if(y>=h-2) t=Math.min(t,0);
+        g.fillStyle=css(pal[t]);g.fillRect(x,y,1,1);
       }
-    });
-    outer.appendChild(inner);
-    parent.appendChild(outer);
-  }
-
-  /* the whole craft, split so the balloon leads and the shed swings after it.
-     Burner and shop window each cast a slow-breathing bloom; every so often
-     the burner fires and lights the envelope from inside like a lantern */
-  function craft(pal,pop){
-    var tilt=el("g",{"class":"tilt"});
-    var a=el("g",{"class":"bobA"});
-    var ga=el("g",{"class":"glowpulse"});
-    halo(ga,15*PX,24*PX,4,pal[7],"7");
-    a.appendChild(ga);
-    a.appendChild(sprite(CRAFT,pal,{to:BALLOON_ROWS,pop:pop}));
-    var fl=el("g",{"class":"burnflare"});
-    halo(fl,15*PX,19*PX,5,pal[7],"7",2);
-    halo(fl,15*PX,24*PX,3,pal[7],"7",2);
-    fl.appendChild(el("rect",{x:15*PX,y:22*PX,width:2*PX,height:2*PX,
-      fill:pal[7],"data-k":"7","class":"px"}));   /* the flame jet itself */
-    a.appendChild(fl);
-    var b=el("g",{"class":"bobB"});
-    var gb=el("g",{"class":"glowpulse"});
-    halo(gb,18*PX,36*PX,6,pal[7],"7");
-    b.appendChild(gb);
-    b.appendChild(sprite(CRAFT,pal,{from:BALLOON_ROWS,pop:pop}));
-    cone(b,pal);
-    b.appendChild(propeller(pal));
-    puffs(b,pal);
-    tilt.appendChild(a);tilt.appendChild(b);
-    return tilt;
-  }
-
-  /* --------------------------------------------------------------- terrain */
-  /* heights are in world units, quantised to the pixel grid, one entry per
-     art column across the 400-unit view */
-  var COLS=W/PX;
-  function ridge(base,amp,phase){
-    var h=[],i;
-    for(i=0;i<COLS;i++)
-      h.push(q(base+Math.sin(i*0.09+phase)*amp+Math.sin(i*0.21+phase)*amp*0.6));
-    return h;
-  }
-  /* Arthur's Seat, the castle rock, then the Old Town falling away down the
-     Royal Mile: a skyline rather than a sine wave. The whole profile is
-     shifted by EDOFF so it stays centred however wide the world is; the
-     flat 152 baseline continues into the procedural wings. */
-  var EDOFF=XOFF/PX;
-  function edinburgh(){
-    var pts=[[0,152],[12,150],[24,146],[38,140],[52,132],[64,124],[74,120],[84,122],
-             [96,130],[112,140],[128,146],[146,148],[162,150],[178,150],[181,138],
-             [184,131],[188,130],[212,130],[214,142],[220,140],[226,143],[232,139],
-             [238,143],[244,140],[250,144],[256,142],[262,146],[268,145],[274,148],
-             [280,147],[288,150],[300,151],[320,152]].map(function(p){
-               return [p[0]+EDOFF,p[1]];});
-    var h=[],i,k=0;
-    for(i=0;i<COLS;i++){
-      while(k<pts.length-2&&pts[k+1][0]<=i) k++;
-      var a=pts[k],b=pts[k+1],t=(i-a[0])/(b[0]-a[0]);
-      h.push(q(a[1]+(b[1]-a[1])*Math.max(0,Math.min(1,t))));
+      return c;
     }
-    function block(x0,x1,top){for(var x=x0+EDOFF;x<=x1+EDOFF&&x<COLS;x++) h[x]=Math.min(h[x],q(top));}
-    block(190,204,118);                       /* keep */
-    block(206,211,112);                       /* tower */
-    [190,194,198,202].forEach(function(x){block(x,x,114);});    /* battlements */
-    [222,235,248,258].forEach(function(x){block(x,x,h[x+EDOFF]-4);}); /* tenement chimneys */
-    block(262,264,136); block(263,263,130);   /* St Giles' crown steeple */
-    block(261,261,133); block(265,265,133);
-    return h;
-  }
-  function staircase(h){
-    var p="-40,200 ",i;
-    for(i=0;i<COLS;i++) p+=(i*PX)+","+h[i]+" "+((i+1)*PX)+","+h[i]+" ";
-    return p+(W+40)+",200";
+    return {w:w,h:h,day:render(CLOUD_DAY),night:render(CLOUD_NIGHT)};
   }
 
-  /* ------------------------------------------------------ dithered sky */
-  var BANDS=[[-480,"#04060E"],[-400,"#070C1A"],[-330,"#0C1428"],[-260,"#121F42"],
-             [-190,"#1D3160"],[-120,"#2E5288"],[-50,"#4E82B2"],[20,"#8CB8D4"],
-             [90,"#E2B279"],[170,null]];
-  var BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
-  var STEPS=[0.85,0.68,0.5,0.32,0.15];    /* one 4x4 tile tall per step */
-
-  function skyColumn(defs,parent){
-    var i,j;
-    for(i=0;i<BANDS.length-1;i++){
-      var y0=BANDS[i][0],y1=BANDS[i+1][0];
-      parent.appendChild(el("rect",{x:-40,y:y0,width:W+80,height:y1-y0,fill:BANDS[i][1]}));
-    }
-    /* fade each band into the one below it: a Bayer ramp, one tile per step */
-    for(i=0;i<BANDS.length-2;i++){
-      var edge=BANDS[i+1][0],col=BANDS[i][1];
-      STEPS.forEach(function(dens,d){
-        var id="dz"+i+"_"+d;
-        var pat=el("pattern",{id:id,patternUnits:"userSpaceOnUse",width:4*PX,height:4*PX});
-        for(var r=0;r<4;r++) for(var c=0;c<4;c++){
-          if(BAYER[r][c] < dens*16)
-            pat.appendChild(el("rect",{x:c*PX,y:r*PX,width:PX,height:PX,fill:col}));
+  /* the cloud deck: a tileable sea of billows, lit on top */
+  var SEA_DAY=["#B7869F","#E5B6B0","#FFDCC8","#FFF3E4"].map(hex),
+      SEA_NIGHT=["#262B58","#454D88","#7780BC","#BCC4EE"].map(hex);
+  function seaTile(TW,SH,seed,pal,pal2){
+    var r=rng(seed),blobs=[],i,x,y;
+    for(i=0;i<TW/9;i++) blobs.push([i*9+r()*6,9+r()*9,6+r()*8]);
+    var lower=[];
+    for(i=0;i<TW/14;i++) lower.push([i*14+r()*8,26+r()*10,7+r()*7]);
+    function surf(list,x){
+      var best=1e9;
+      list.forEach(function(b){
+        for(var k=-1;k<=1;k++){
+          var dx=x+.5-(b[0]+k*TW);
+          if(Math.abs(dx)<b[2]){var s=b[1]-Math.sqrt(b[2]*b[2]-dx*dx);if(s<best)best=s;}
         }
-        defs.appendChild(pat);
-        parent.appendChild(el("rect",{x:-40,y:edge+d*4*PX,width:W+80,height:4*PX,
-          fill:"url(#"+id+")"}));
       });
+      return best;
     }
+    var top=[],top2=[];
+    for(x=0;x<TW;x++){top.push(Math.min(surf(blobs,x),20));top2.push(surf(lower,x));}
+    function render(P){
+      var c=canvas(TW,SH),g=c.getContext("2d");
+      for(x=0;x<TW;x++){
+        var s=Math.round(top[x]);
+        for(y=Math.max(0,s);y<SH;y++){
+          var d=y-s,t;
+          var d2=y-Math.round(top2[x]);
+          if(d<1) t=3;
+          else{
+            var v=1-d/16-(top[x]-8)/30;
+            if(d2>=0&&d2<2&&d>6) v=.9;          /* a second row of billows catching light */
+            else if(d2>=2&&d2<6&&d>6) v=.35;
+            t=clamp(step(clamp(v,0,1)*2.4,x,y),0,2);
+          }
+          g.fillStyle=css(P[t]);g.fillRect(x,y,1,1);
+        }
+      }
+      return c;
+    }
+    return {w:TW,h:SH,day:render(pal),night:render(pal2)};
   }
 
-  /* tones are [core, mid, rim]; dir shades one shoulder for a lit-from-the-side moon */
-  function disc(parent,cx,cy,r,tones,dir){
-    for(var y=-r;y<=r;y++) for(var x=-r;x<=r;x++){
-      var d=Math.sqrt(x*x+y*y);
-      if(d>r+0.4) continue;
-      var t;
-      if(d>r-1.1) t=tones[2];
-      else if(dir&&(x*dir+y*0.6)<-r*0.15) t=tones[1];
-      else t=d>r*0.55?tones[1]:tones[0];
-      parent.appendChild(el("rect",{x:cx+x*PX,y:cy+y*PX,width:PX,height:PX,fill:t}));
-    }
-  }
-
-  /* quantised light bloom, the closest pixel land gets to a shader: three
-     opacity bands on the art grid, the outermost checkered so the light
-     dissolves into the sky instead of ringing. Same-band runs merge into
-     one rect; boost scales the whole bloom up (the burner firing) */
-  function halo(parent,cx,cy,r,color,dataK,boost){
-    boost=boost||1;
-    function band(x,y){
-      var d=Math.sqrt(x*x+y*y);
-      if(d>r) return 0;
-      if(d>r*0.72) return ((x+y)&1)?0:.05*boost;
-      return (d>r*0.45?.08:.14)*boost;
-    }
-    for(var y=-r;y<=r;y++){
-      for(var x=-r;x<=r;){
-        var o=band(x,y);
-        if(!o){x++;continue;}
-        var x0=x;
-        while(x<=r&&band(x,y)===o) x++;
-        var rect=el("rect",{x:cx+x0*PX,y:cy+y*PX,width:(x-x0)*PX,height:PX,
-          fill:color,opacity:o.toFixed(3)});
-        if(dataK){rect.setAttribute("data-k",dataK);rect.setAttribute("class","px");}
-        parent.appendChild(rect);
+  /* ================================================================ LAND */
+  /* Edinburgh from the south-west at sundown: Pentlands and the Forth behind,
+     castle rock and Arthur's Seat in the middle, the Old Town roofline in front */
+  var LH=110;
+  function makeLand(){
+    var r=rng(7),x,y,i;
+    function grid(){var g=new Uint8Array(W*LH);return g;}
+    function fillCol(g,x,h){x=Math.round(x);if(x<0||x>=W)return;h=Math.round(h);
+      for(var yy=0;yy<h&&yy<LH;yy++) g[(LH-1-yy)*W+x]=1;}
+    function setp(g,x,h,v){x=Math.round(x);h=Math.round(h);if(x<0||x>=W||h<0||h>=LH)return;g[(LH-1-h)*W+x]=v;}
+    function profile(g,pts,ox){
+      for(var k=0;k<pts.length-1;k++){
+        var a=pts[k],b=pts[k+1];
+        for(var xx=Math.ceil(a[0]);xx<=b[0];xx++){
+          var tt=(xx-a[0])/((b[0]-a[0])||1);
+          fillCol(g,ox+xx,a[1]+(b[1]-a[1])*tt);
+        }
       }
     }
+    function block(g,x0,x1,top){for(var xx=x0;xx<=x1;xx++)fillCol(g,AX+xx,top);}
+
+    /* far: hills and the firth */
+    var far=grid(),water=[];
+    for(x=0;x<W;x++){
+      var hf=30+6*Math.sin(x*.021+1)+4*Math.sin(x*.057+2)+2*Math.sin(x*.13)
+            +10*smooth(0,1,1-Math.abs((x-AX+170)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110));
+      fillCol(far,x,hf);
+    }
+    /* mid: Calton Hill, castle rock, Arthur's Seat */
+    var mid=grid();
+    for(x=0;x<W;x++) fillCol(mid,x,17+3*Math.sin(x*.05)+2*Math.sin(x*.11+1));
+    profile(mid,[[40,18],[45,30],[47,40],[54,42],[68,45],[76,43],[82,48],[90,54],[96,58],[100,59],
+                 [104,57],[112,52],[124,46],[140,41],[160,31],[180,23],[200,18]],AX);
+    profile(mid,[[-36,18],[-30,26],[-25,32],[-19,36],[18,36],[24,31],[30,23],[38,18]],AX);
+    profile(mid,[[-138,18],[-128,26],[-118,32],[-104,34],[-90,31],[-80,24],[-70,18]],AX);
+    /* the castle */
+    block(mid,-23,-15,41);block(mid,-22,-16,43);              /* half moon battery */
+    block(mid,-14,-5,50);                                      /* palace */
+    for(x=-14;x<=-5;x+=2) block(mid,x,x,51);
+    block(mid,-5,11,46);                                       /* great hall */
+    block(mid,-4,10,48);
+    block(mid,11,15,54);                                       /* tower */
+    for(x=11;x<=15;x+=2) block(mid,x,x,55);
+    block(mid,13,13,61);                                       /* flagpole */
+    setp(mid,AX+14,60,1);setp(mid,AX+15,60,1);setp(mid,AX+14,59,1);
+    block(mid,16,22,42);
+    /* Calton Hill: Nelson's telescope tower, the unfinished Parthenon */
+    block(mid,-99,-97,44);block(mid,-98,-98,47);
+    block(mid,-121,-109,41);
+    for(x=-120;x<=-110;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
+
+    /* near: tenements, spires, a clock tower */
+    var near=grid();windows=[];cat=null;
+    x=-6;
+    while(x<W+6){
+      var bw=5+Math.floor(r()*8),rel=x-AX;
+      var bh=8+Math.floor(r()*7)+(rel>-70&&rel<10?6:0)+(rel>-40&&rel<-10?3:0);
+      var pitched=r()<.5;
+      for(i=0;i<bw;i++){
+        var hh=bh;
+        if(pitched) hh=bh+Math.floor(Math.min(i,bw-1-i)/2)+1;
+        fillCol(near,x+i,hh);
+      }
+      if(!pitched&&r()<.8){                                   /* chimney stacks with pots */
+        var cxs=x+1+Math.floor(r()*(bw-3));
+        fillCol(near,cxs,bh+3);fillCol(near,cxs+1,bh+3);setp(near,cxs,bh+3,1);
+      }
+      if(!cat&&!pitched&&rel>-110&&rel<-60&&bw>=7) cat={x:x+bw-6,h:bh};
+      for(var wy=3;wy<bh-2;wy+=3) for(var wx=x+1;wx<x+bw-1;wx+=2){
+        if(r()<.2) windows.push({x:wx,h:wy,tall:r()<.4,ph:r()*6.28,sp:.02+r()*.05,
+          c:r()<.7?"#FFD07A":"#F2A35E"});
+      }
+      x+=bw+(r()<.25?1:0);
+    }
+    /* Scott Monument: a gothic rocket */
+    for(y=12;y<=48;y++){
+      var half=Math.round(4.5*(1-(y-12)/38));
+      for(x=-half;x<=half;x++) setp(near,AX+20+x,y,1);
+    }
+    [[-4,30],[4,30],[-3,38],[3,38],[-5,22],[5,22]].forEach(function(p){
+      setp(near,AX+20+p[0],p[1],1);setp(near,AX+20+p[0],p[1]+1,1);setp(near,AX+20+p[0],p[1]+2,1);});
+    for(y=13;y<=17;y++){setp(near,AX+19,y,0);setp(near,AX+21,y,0);}
+    /* Balmoral clock tower */
+    block(near,44,56,20);block(near,48,52,33);block(near,49,51,36);block(near,50,50,39);
+    windows.push({x:AX+50,h:29,tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});
+    /* St Giles' crown steeple */
+    block(near,-48,-42,28);
+    for(x=-48;x<=-42;x++) if((x+48)%3!==1) fillCol(near,AX+x,33);
+    block(near,-46,-44,35);block(near,-45,-45,39);
+
+    /* shade a layer: vertical ramp, sunlit rim along top and left edges */
+    function shade(g,top,bot,rim,rimL){
+      var c=canvas(W,LH),gx=c.getContext("2d"),id=gx.createImageData(W,LH),d=id.data;
+      var T=hex(top),Bt=hex(bot),R=hex(rim),RL=hex(rimL||rim);
+      for(y=0;y<LH;y++) for(x=0;x<W;x++){
+        var p=y*W+x;
+        if(!g[p]) continue;
+        var up=y>0&&g[p-W],lf=x>0&&g[p-1];
+        var col;
+        if(!up) col=R;
+        else if(!lf) col=RL;
+        else{var q=step((y/LH)*3,x,y)/3;col=mix(T,Bt,q);}
+        d[p*4]=col[0];d[p*4+1]=col[1];d[p*4+2]=col[2];d[p*4+3]=255;
+      }
+      gx.putImageData(id,0,0);
+      return c;
+    }
+    /* the firth: a strip of evening light under the far hills */
+    var farC=shade(far,"#B48FA6","#957A9C","#F3C3A5");
+    var fg=farC.getContext("2d");
+    for(y=LH-19;y<LH-15;y++){fg.fillStyle=y===LH-19?"#FFE0B6":"#E9B7A2";fg.fillRect(0,y,W,1);}
+    for(i=0;i<W/6;i++) water.push({x:Math.floor(r()*W),y:LH-18+Math.floor(r()*3),ph:r()*6.28});
+
+    var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
+    var mg=midC.getContext("2d");
+    mg.fillStyle="#FFCB78";
+    [[-12,46],[-9,46],[-1,43],[3,43],[7,43],[13,50],[19,39]].forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});
+    var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
+    return {far:farC,mid:midC,near:nearC,water:water};
   }
 
-  /* ---------------------------------------------------------------- build */
-  var corner=document.getElementById("corner"),
-      sky=document.getElementById("sky"),captext=document.getElementById("captext"),
-      capsrc=document.getElementById("capsrc"),
-      btn=document.getElementById("btn"),btndown=document.getElementById("btndown");
-  var starG,hills=[],cams=[],craftDefs=null,idx=0,flying=false;
+  /* ============================================================= LAYOUT */
+  function layout(){
+    var dpr=window.devicePixelRatio||1;
+    var cssW=hero.clientWidth,cssH=hero.clientHeight;
+    var base=cssW>=1100?4:3;
+    S=Math.max(2,Math.round(base*dpr))/dpr;
+    W=Math.ceil(cssW/S);H=Math.ceil(cssH/S);
+    cv.width=W;cv.height=H;
+    cv.style.width=(W*S)+"px";cv.style.height=(H*S)+"px";
+    var offX=(cssW-W*S)/2;
+    cv.style.left=offX+"px";
+    img=ctx.createImageData(W,H);u8=img.data;u32=new Uint32Array(u8.buffer);
 
-  function cam(factor){
-    var g=el("g",{"class":"cam"});
-    g.setAttribute("data-f",factor);
-    cams.push(g);sky.appendChild(g);
-    return g;
-  }
-
-  function build(sc){
-    /* header corner */
-    corner.appendChild(craft(sc.pal));
-
-    sky.setAttribute("viewBox","0 0 "+W+" 160");
-    sky.style.setProperty("--drift",(-W)+"px");
-    var defs=el("defs",{});
-    sky.appendChild(defs);
-
-    /* --- back to front. cam layers are appended in draw order. --- */
-
-    /* atmosphere: sky column, sun, moon, stars, the rare meteor */
-    var air=cam(1);
-    skyColumn(defs,air);
-    /* phones only see the middle ~280 units: tuck the sun and moon into
-       that core so they are never out of frame */
-    var NARROW=innerWidth<630;
-    var SUNX=NARROW?q(212):q(64+XOFF),MOONX=NARROW?q(424):q(470+XOFF);
-    halo(air,SUNX,q(104),11,"#F6B85E");
-    /* crepuscular rays: dithered shafts climbing away from the low sun */
-    function ray(dx,dy,n){
-      for(var i=7;i<n;i++){
-        var x=q(SUNX+dx*i*2),y=q(104+dy*i*2);
-        if(((x+y)/PX)%2) continue;
-        air.appendChild(el("rect",{x:x,y:y,width:PX,height:PX,
-          fill:"#F6B85E",opacity:i<n*0.45?.07:.045}));
-        if(i<n*0.45)
-          air.appendChild(el("rect",{x:x,y:y+PX,width:PX,height:PX,
-            fill:"#F6B85E",opacity:.04}));
-      }
-    }
-    ray(2.8,-0.9,60);ray(2.1,-1.5,56);ray(1.0,-2.3,48);
-    disc(air,SUNX,q(104),5,["#FFE3A0","#F6B85E","#E08A34"]);   /* low sun */
-    halo(air,MOONX,q(-424),8,"#C3CFE8");
-    disc(air,MOONX,q(-424),4,["#EDF3FF","#93A2C4","#C3CFE8"],1); /* moon */
-
-    starG=el("g",{opacity:sc.stars});
-    starG.style.transition="opacity 1.8s ease";
-    /* hash scatter, not a stepping formula: the old (i*61, i*47) lattice
-       drew the stars in diagonal chains, and its ~11-step X wrap resonated
-       with the every-11th big star so the bright ones bunched in a column */
-    function hash(n){var f=Math.sin(n)*43758.5453123;return f-Math.floor(f);}
-    var NSTARS=Math.round(78*K);
-    for(var i=0;i<NSTARS;i++){
-      var big=(i%11===0),s=big?PX*2:PX;
-      var X=q(hash(i*12.9898+7)*(W+40)-20),Y=q(-476+hash(i*78.233+3)*336);
-      var st=el("rect",{x:X,y:Y,width:s,height:s,
-        fill:big?"#FFFFFF":"#CCD8F0","class":"star"});
-      st.style.animationDelay=((i%9)*0.4).toFixed(1)+"s";
-      starG.appendChild(st);
-      if(big)                        /* hero stars flash 4-point arms */
-        [[-PX,0],[s,0],[0,-PX],[0,s]].forEach(function(o){
-          var arm=el("rect",{x:X+o[0],y:Y+o[1],width:PX,height:PX,
-            fill:"#FFFFFF","class":"sparkarm"});
-          arm.style.animationDelay=(((i%9)*0.4)+(i%4)*1.8).toFixed(1)+"s";
-          starG.appendChild(arm);
-        });
-    }
-    air.appendChild(starG);
-
-    /* meteors: a bright head leading its fading tail. Three spawn points on
-       offset prime-length cycles, so they feel unscheduled */
-    function meteor(hx,hy,vx,vy,dur,del){
-      var g=el("g",{"class":"meteor"}),L=Math.sqrt(vx*vx+vy*vy),
-          ux=vx/L,uy=vy/L,m;
-      g.style.setProperty("--mx",vx+"px");
-      g.style.setProperty("--my",vy+"px");
-      g.style.animationDuration=dur+"s";
-      g.style.animationDelay=del+"s";
-      g.appendChild(el("rect",{x:hx-PX,y:hy-PX,width:PX*4,height:PX*4,
-        fill:"#FFFFFF",opacity:.12}));                        /* head aura */
-      g.appendChild(el("rect",{x:hx,y:hy,width:PX*2,height:PX*2,fill:"#FFFFFF"}));
-      for(m=1;m<8;m++)
-        g.appendChild(el("rect",{x:q(hx-ux*(m+1)*PX),y:q(hy-uy*(m+1)*PX),
-          width:PX,height:PX,fill:"#FFFFFF",opacity:(0.8-m*0.1).toFixed(2)}));
-      air.appendChild(g);
-    }
-    meteor(q(110+XOFF),q(-452),76,44,19,0);
-    meteor(q(430+XOFF),q(-320),64,52,23,8);
-    meteor(q(300+XOFF),q(-396),88,34,29,14);
-
-    /* clouds: one sprite per size in defs, reused by every instance */
-    CLOUDS.forEach(function(art,n){
-      var g=sprite(art,sc.pal);
-      g.setAttribute("id","cl"+n);
-      defs.appendChild(g);
-    });
-    var deck=[{n:0,f:1.0,o:.34,cls:"cd1",step:113,y0:132,dy:-44},
-              {n:1,f:1.08,o:.5,cls:"cd2",step:149,y0:112,dy:-52},
-              {n:2,f:1.2,o:.68,cls:"cd3",step:197,y0:96,dy:-58}];
-    function clouds(d){
-      var layer=cam(d.f),run=el("g",{"class":d.cls,opacity:d.o});
-      run.style.animationDuration=(({cd1:96,cd2:64,cd3:41})[d.cls]*K)+"s";
-      for(var k=0;k<Math.ceil(7*K);k++){
-        var y=d.y0+(k%7)*d.dy;
-        [0,W].forEach(function(off){
-          run.appendChild(use("#cl"+d.n,q((k*d.step)%(W-40))+off,q(y)));
-        });
-      }
-      layer.appendChild(run);
-    }
-
-    var H1=ridge(128,7,0),H2=ridge(140,5,2.1),EDH=edinburgh();
-    hills.push(el("polygon",{points:staircase(H1),fill:sc.far,"class":"hill"}));
-    hills.push(el("polygon",{points:staircase(H2),fill:sc.mid,"class":"hill"}));
-    hills.push(el("polygon",{points:staircase(EDH),fill:sc.near,"class":"hill"}));
-
-    /* a checkered pale crest on the far ridges: cheap atmospheric scatter */
-    function hazeline(parent,h){
-      for(var i=0;i<COLS;i+=2)
-        parent.appendChild(el("rect",{x:i*PX,y:h[i],width:PX,height:PX,
-          fill:"#EAF2FF",opacity:.06}));
-    }
-
-    clouds(deck[0]);                         /* distant cloud, behind the hills */
-    var far=cam(0.88);far.appendChild(hills[0]);hazeline(far,H1);
-    var mid=cam(0.95);mid.appendChild(hills[1]);hazeline(mid,H2);
-    clouds(deck[1]);                         /* nearer cloud, in front of them */
-
-    /* birds, low altitude only */
-    var birdCam=cam(1.12),birds=el("g",{"class":"cd2"});
-    birds.style.animationDuration=(64*K)+"s";
-    [[92,96],[118,104],[180,88],[300,100],[420,92],[528,106],[596,98]].forEach(function(p,i){
-      [0,W].forEach(function(off){
-        var g=el("g",{transform:"translate("+(q(p[0]+XOFF)+off)+","+q(p[1])+")"});
-        var f1=sprite(BIRD[0],sc.pal);f1.setAttribute("class","wingA");
-        var f2=sprite(BIRD[1],sc.pal);f2.setAttribute("class","wingB");
-        f1.style.animationDelay=(i*0.17)+"s";f2.style.animationDelay=(i*0.17+0.55)+"s";
-        g.appendChild(f1);g.appendChild(f2);birds.appendChild(g);
-      });
-    });
-    birdCam.appendChild(birds);
-
-    /* fireflies over the park, low altitude only */
-    var ffCam=cam(1.06);
-    [[88,134],[142,138],[386,130],[502,140],[598,134]].forEach(function(p,i){
-      var f=el("rect",{x:q(p[0]+XOFF),y:q(p[1]),width:PX,height:PX,
-        fill:"#FFD98A",opacity:.6,"class":"firefly"});
-      f.style.animationDelay=(i*1.3).toFixed(1)+"s";
-      ffCam.appendChild(f);
-    });
-
-    clouds(deck[2]);                         /* nearest cloud, fastest drift */
-
-    /* the craft: defined once, placed twice so the drift loops seamlessly */
-    craftDefs=craft(sc.pal,true);
-    craftDefs.setAttribute("id","craft");
-    defs.appendChild(craftDefs);
-    var lane;
-    if(NARROW){
-      lane=el("g",{"class":"sway"});
+    /* where the craft hovers: beside the name if there's room, under it if not */
+    var hr=hero.getBoundingClientRect(),nr=document.getElementById("nm").getBoundingClientRect(),
+        rr=document.querySelector(".role").getBoundingClientRect();
+    var cwCss=CW*S,cx,topCss;
+    var beside=nr.right-hr.left+60+cwCss/2;
+    if(beside+cwCss/2+16<=cssW&&cssW>=760){
+      cx=clamp(Math.max(beside,cssW*.7),0,cssW-cwCss/2-24);
+      topCss=Math.max(cssH*.12,30);
     }else{
-      lane=el("g",{"class":"drift"});
-      lane.style.animationDuration=(78*K)+"s";
+      cx=cssW*(cssW<520?.5:.62);
+      topCss=rr.bottom-hr.top+18;
     }
-    [0,W].forEach(function(off){ lane.appendChild(use("#craft",296+XOFF+off,24)); });
-    sky.appendChild(lane);
+    craftX=Math.round((cx-offX)/S-CW/2);
+    craftY=Math.round(topCss/S);
+    craftY=Math.min(craftY,H-CH-8);
 
-    /* skyline sits in front of everything, a few windows lit in the castle
-       and down the Old Town: steady, small, distant */
-    var front=cam(1.02);
-    front.appendChild(hills[2]);
-    [[193,4],[201,6],[209,3],[216,3],[223,4],[231,3],[240,3],[247,4],
-     [255,3],[268,3],[277,2]].forEach(function(p){
-      var c=p[0]+EDOFF;
-      front.appendChild(el("rect",{x:c*PX,y:EDH[c]+p[1]*PX,
-        width:PX,height:PX,fill:sc.pal[7],"data-k":"7","class":"px",opacity:.9}));
-    });
+    AX=Math.round(W*(W<200?.3:.4));
+    SUN={x:Math.round(W*(W<200?.2:.17)),a:30};
+    STARTOP=H+TOPCAM*DSKY;
+    /* keep the moon clear of the balloon */
+    var mx=craftX>W/2?craftX-24:craftX+CW+24;
+    MOON={x:Math.round(clamp(mx,12,W-12)),a:Math.round(STARTOP-H*.22)};
+    AURA=STARTOP-H*.82;
+
+    var r=rng(11);
+    stars=[];
+    var NS=Math.round(W*H/70);
+    for(var i=0;i<NS;i++) stars.push({x:Math.floor(r()*W),a:90+r()*(STARTOP-80),b:.35+.65*r(),
+      big:r()<.045,ph:r()*6.28,sp:.7+r()*2.2});
+
+    cloudSprites=[];
+    [[22,8],[30,9],[40,12],[52,14],[64,16],[28,9],[46,13],[74,18]].forEach(function(s,k){
+      cloudSprites.push(cloudSprite(s[0],s[1],100+k*17));});
+    clouds=[];
+    var nb=Math.max(5,Math.round(W/42));
+    for(i=0;i<nb;i++){
+      var d=.5+.42*r();
+      clouds.push({s:i%cloudSprites.length,x:r()*(W+120),alt:30+r()*120,d:d,v:(1.2+2.6*d),front:false,o:1});
+    }
+    for(i=0;i<Math.max(3,Math.round(W/110));i++){
+      clouds.push({s:4+(i%4),x:r()*(W+120),alt:180+r()*90,d:1.15+.2*r(),v:6+3*r(),front:true,o:1});
+    }
+    sea={back:seaTile(192,64,5,SEA_DAY.map(function(c){return mix(c,hex("#9D8FBC"),.3);}),
+                    SEA_NIGHT.map(function(c){return mix(c,hex("#1E2350"),.3);})),
+         front:seaTile(224,70,9,SEA_DAY,SEA_NIGHT)};
+    land=makeLand();
+    birds=[];
+    for(i=0;i<5;i++) birds.push({dx:i*7+(i%2)*3,dy:(i%2)*3+Math.abs(i-2)*2,ph:i*.7});
+    render(nowT());
   }
 
-  function show(i){
-    var sc=SKIES[i];
-    document.body.setAttribute("data-band",i);
-    document.documentElement.style.setProperty("--accent",sc.accent);
-    document.documentElement.style.setProperty("--accent-soft",sc.soft);
+  /* ============================================================ RENDER */
+  function nowT(){return RM?12:performance.now()/1000;}
 
-    cams.forEach(function(g){
-      g.style.transform="translateY("+(sc.shift*parseFloat(g.getAttribute("data-f"))).toFixed(1)+"px)";
-    });
-    hills[0].setAttribute("fill",sc.far);
-    hills[1].setAttribute("fill",sc.mid);
-    hills[2].setAttribute("fill",sc.near);
-    starG.setAttribute("opacity",sc.stars);
-    if(craftDefs) craftDefs.style.setProperty("--shear",sc.shear);
-    corner.style.setProperty("--shear",sc.shear);
-
-    [].forEach.call(document.querySelectorAll("[data-k]"),function(r){
-      r.setAttribute("fill",sc.pal[r.getAttribute("data-k")]);
-    });
-
-    summit = (i===SKIES.length-1) ? pickVerse() : null;
-    captext.style.opacity=0;capsrc.style.opacity=0;
-    setTimeout(function(){caption();captext.style.opacity=1;capsrc.style.opacity=1;},260);
+  function drawSky(t){
+    var shift=camY*DSKY,y,x,k=0;
+    for(y=0;y<H;y++){
+      var a=(H-1-y)+shift;
+      while(k>0&&SKY[k][0]>a) k--;
+      while(k<SKY.length-2&&SKY[k+1][0]<=a) k++;
+      var s0=SKY[k],s1=SKY[k+1],tt=clamp((a-s0[0])/(s1[0]-s0[0]),0,1),q=tt*SKYLV,fq=Math.floor(q);
+      var cA=pack(mix(s0[1],s1[1],fq/SKYLV)),cB=pack(mix(s0[1],s1[1],Math.min(SKYLV,fq+1)/SKYLV));
+      var f=smooth(.3,.7,q-fq),row=y*W;
+      for(x=0;x<W;x++) u32[row+x]=f>bay(x,y)?cB:cA;
+    }
+    /* low sun with a stepped bloom */
+    var sy=Math.round(H-1-(SUN.a-shift));
+    if(sy-34<H){
+      var SC=hex("#FFF2CC"),SE=hex("#FFC66E"),SG=hex("#FFC979");
+      for(y=-34;y<=34;y++) for(x=-34;x<=34;x++){
+        var dd=Math.sqrt(x*x+y*y);
+        if(dd<=6.3){blend(SUN.x+x,sy+y,dd<4.6?SC:SE,1);continue;}
+        var al=dd<11?.3:dd<18?.17:dd<26?.09:dd<34?(((x+y)&1)?0:.07):0;
+        if(al) blend(SUN.x+x,sy+y,SG,al);
+      }
+    }
+    /* stars come out as the sky darkens */
+    var STAR=hex("#E9EEFF");
+    for(var i=0;i<stars.length;i++){
+      var st=stars[i],syy=Math.round(H-1-(st.a-shift));
+      if(syy<0||syy>=H) continue;
+      var vis=smooth(120,250,st.a)*st.b*(RM?.85:(.62+.38*Math.sin(t*st.sp+st.ph)));
+      if(vis<.04) continue;
+      blend(st.x,syy,STAR,vis);
+      if(st.big){
+        var arm=vis*(RM?.45:(.25+.35*Math.max(0,Math.sin(t*st.sp*.5+st.ph))));
+        blend(st.x-1,syy,STAR,arm);blend(st.x+1,syy,STAR,arm);
+        blend(st.x,syy-1,STAR,arm);blend(st.x,syy+1,STAR,arm);
+      }
+    }
+    /* aurora curtains at the top of the climb */
+    var aur=smooth(330,460,camY);
+    if(aur>0){
+      var G1=hex("#5CF0A6"),G2=hex("#56D2D6"),G3=hex("#9C7CF2");
+      for(x=0;x<W;x++){
+        var base=AURA+10*Math.sin(x*.035+t*.33)+7*Math.sin(x*.09-t*.55)+4*Math.sin(x*.21+t*.8);
+        var Lr=34+12*Math.sin(x*.02+t*.2);
+        var ci=.35+.65*Math.pow(.5+.5*Math.sin(x*.13+t*.9+Math.sin(x*.045+t*.3)*2.2),2);
+        for(var j=0;j<Lr;j++){
+          var yy=Math.round(H-1-(base+j-shift));
+          if(yy<0||yy>=H) continue;
+          var fr=j/Lr,al2=aur*ci*(j<3?j/3:Math.pow(1-fr,1.5))*.6;
+          al2=Math.floor(al2*7+bay(x,yy))/7;
+          if(al2<=0) continue;
+          var col=fr<.45?mix(G1,G2,fr/.45):mix(G2,G3,(fr-.45)/.55);
+          addpx(x,yy,col,al2*.75);
+        }
+      }
+    }
+    /* moon, lit from the left */
+    var my=Math.round(H-1-(MOON.a-shift));
+    if(my>-24&&my<H+24){
+      var M1=hex("#F4F1DF"),M2=hex("#CFCBE0"),MC=hex("#ABA9C6"),MG=hex("#B9C4F2");
+      for(y=-20;y<=20;y++) for(x=-20;x<=20;x++){
+        var dm=Math.sqrt(x*x+y*y);
+        if(dm<=7.3){
+          var shadow=Math.sqrt((x-3.5)*(x-3.5)+(y+1)*(y+1))<6.2;
+          if(shadow) continue;
+          blend(MOON.x+x,my+y,(dm>6.2?M2:M1),1);
+          continue;
+        }
+        var am=dm<12?.12:dm<17?.06:dm<20?(((x+y)&1)?0:.04):0;
+        if(am) addpx(MOON.x+x,my+y,MG,am);
+      }
+      blend(MOON.x-4,my-2,MC,1);blend(MOON.x-3,my+3,MC,1);blend(MOON.x-5,my+1,MC,.7);
+    }
+    /* the odd meteor, once the stars are out */
+    if(!RM&&camY>220){
+      var cyc=Math.floor(t/7.3),pm=(t%7.3)/.8;
+      if(pm<1){
+        var rr=rng(cyc*31+7),hx=Math.round(W*(.15+.7*rr())+pm*34),hy=Math.round(H*(.08+.35*rr())+pm*16);
+        var MW=hex("#FFFFFF");
+        for(var m=0;m<9;m++) blend(hx-Math.round(m*2.1),hy-m,MW,(1-m/9)*(1-pm*.6));
+      }
+    }
+    ctx.putImageData(img,0,0);
   }
 
-  /* the top is a summit, not a loop: you can only go back down from it */
+  function drawClouds(t,front,n){
+    for(var i=0;i<clouds.length;i++){
+      var c=clouds[i];
+      if(c.front!==front) continue;
+      var sp=cloudSprites[c.s],wrap=W+sp.w+40;
+      var x=Math.round(((c.x-t*c.v)%wrap+wrap)%wrap)-sp.w-20;
+      var y=Math.round(H-1-(c.alt-camY*c.d))-sp.h;
+      if(y>H||y+sp.h<0) continue;
+      ctx.drawImage(sp.day,x,y);
+      if(n>.02){ctx.globalAlpha=n;ctx.drawImage(sp.night,x,y);ctx.globalAlpha=1;}
+    }
+  }
+
+  /* the cloud deck sits above you, then around you, then far below */
+  var SEAK=[[0,-.3],[60,.18],[150,.66],[300,.86],[470,.95]];
+  function seaY(c){
+    for(var k=0;k<SEAK.length-1;k++){
+      var a=SEAK[k],b=SEAK[k+1];
+      if(c<=b[0]){var tt=(c-a[0])/(b[0]-a[0]);tt=tt*tt*(3-2*tt);return (a[1]+(b[1]-a[1])*tt)*H;}
+    }
+    return SEAK[SEAK.length-1][1]*H;
+  }
+  function drawSea(tile,t,y,speed,n,alpha){
+    if(alpha<=0||y>=H) return;
+    var off=Math.round(((t*speed)%tile.w+tile.w)%tile.w);
+    ctx.globalAlpha=alpha;
+    for(var x=-off;x<W;x+=tile.w){
+      ctx.drawImage(tile.day,x,Math.round(y));
+      if(n>.02){ctx.globalAlpha=alpha*n;ctx.drawImage(tile.night,x,Math.round(y));ctx.globalAlpha=alpha;}
+    }
+    var below=Math.round(y)+tile.h;
+    if(below<H){
+      var deep=mix(SEA_DAY[0],SEA_NIGHT[0],n);
+      ctx.fillStyle=css(deep);ctx.fillRect(0,below,W,H-below);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  function drawLand(t){
+    var yf=H-LH+Math.round(camY*.72),ym=H-LH+Math.round(camY*.86),yn=H-LH+Math.round(camY);
+    if(yf<H){
+      ctx.drawImage(land.far,0,yf);
+      ctx.fillStyle="#FFF4D8";
+      land.water.forEach(function(w){
+        if(RM||Math.sin(t*2.2+w.ph)>.82) ctx.fillRect(w.x,yf+w.y,RM?0:2,1);
+      });
+    }
+    if(ym<H) ctx.drawImage(land.mid,0,ym);
+    /* a few gulls, low down */
+    if(camY<200){
+      var by=Math.round(H*.42-(-camY*.9));
+      var bxx=Math.round(((W+60)-(t*5)%(W+90)));
+      ctx.fillStyle="#3A2840";
+      birds.forEach(function(b){
+        var fr=Math.floor(t*3+b.ph)%2,x=bxx+b.dx,y=by+b.dy+Math.round(Math.sin(t*.8+b.ph));
+        if(fr){ctx.fillRect(x,y,1,1);ctx.fillRect(x+2,y,1,1);ctx.fillRect(x+1,y+1,1,1);}
+        else  {ctx.fillRect(x+1,y,1,1);ctx.fillRect(x,y+1,1,1);ctx.fillRect(x+2,y+1,1,1);}
+      });
+    }
+    if(yn<H){
+      ctx.drawImage(land.near,0,yn);
+      windows.forEach(function(w){
+        var on=w.clock||RM||Math.sin(t*w.sp*6+w.ph)>-.75;
+        if(!on) return;
+        ctx.fillStyle=w.c;
+        ctx.fillRect(w.x,yn+LH-1-w.h,1,w.tall?2:1);
+      });
+      /* a rooftop cat, watching the balloon */
+      if(cat){
+        var cx=cat.x,cy=yn+LH-1-cat.h;
+        ctx.fillStyle="#130E1B";
+        ctx.fillRect(cx,cy-6,1,1);ctx.fillRect(cx+4,cy-6,1,1);
+        ctx.fillRect(cx,cy-5,5,3);ctx.fillRect(cx+1,cy-2,3,1);ctx.fillRect(cx,cy-1,5,1);
+        var tail=RM?0:Math.floor(t*1.4)%3;
+        ctx.fillRect(cx+5,cy-1,1,1);
+        if(tail===0){ctx.fillRect(cx+6,cy-2,1,1);ctx.fillRect(cx+6,cy-3,1,1);}
+        else if(tail===1){ctx.fillRect(cx+6,cy-2,1,1);ctx.fillRect(cx+7,cy-3,1,1);}
+        else {ctx.fillRect(cx+6,cy-1,1,1);ctx.fillRect(cx+7,cy-2,1,1);}
+        var blink=!RM&&(t%4.6)<.16;
+        if(!blink){ctx.fillStyle="#F6DE74";ctx.fillRect(cx+1,cy-4,1,1);ctx.fillRect(cx+3,cy-4,1,1);}
+      }
+    }
+  }
+
+  /* hand the scene to the page: dither down into the content's ground */
+  function drawFade(){
+    var NB=hex("#16121F"),FH=10,y,x;
+    ctx.fillStyle=css(NB);
+    for(y=0;y<FH;y++){
+      var dens=(y+1)/FH;
+      for(x=0;x<W;x++) if(dens*dens>bay(x,y)) ctx.fillRect(x,H-FH+y,1,1);
+    }
+  }
+
+  function render(t){
+    if(!W) return;
+    var n=nightAt(camY);
+    drawSky(t);
+    drawClouds(t,false,n);
+    drawLand(t);
+    var sy=seaY(camY),sa=smooth(50,140,camY);
+    drawSea(sea.back,t,sy-9,1.2,n,sa);
+    drawCraft(t);
+    drawSea(sea.front,t,sy,3,n,sa);
+    drawClouds(t,true,n);
+    drawFade();
+  }
+
+  /* ============================================================== LOOP */
+  function ease(x){return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;}
+  function tick(now){
+    raf=0;
+    if(!running) return;
+    raf=requestAnimationFrame(tick);
+    if(now-lastDraw<1000/30) return;
+    lastDraw=now;
+    if(flying){
+      var p=clamp((now-camT0)/FLY,0,1),e=ease(p);
+      camY=camFrom+(camTo-camFrom)*e;
+      readout(e);
+      if(p>=1){flying=false;camY=camTo;syncButtons();}
+    }
+    render(now/1000);
+  }
+  function start(){if(RM||running||!visible) return;running=true;raf=requestAnimationFrame(tick);}
+  function stop(){running=false;if(raf)cancelAnimationFrame(raf);raf=0;}
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){visible=es[0].isIntersecting;if(visible)start();else stop();}).observe(hero);
+  }
+
+  /* ========================================================= ALTITUDE UI */
+  var btn=document.getElementById("btn"),btndown=document.getElementById("btndown"),
+      altm=document.getElementById("altm"),altname=document.getElementById("altname"),
+      cap=document.getElementById("cap");
+  var mFrom=400;
+  function fmt(m){
+    m=Math.round(m/50)*50;
+    var s=String(m).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+    return s+(LANG==="zh"?" 米":" m");
+  }
+  function readout(e){
+    var b=BANDS[idx];
+    altm.textContent=fmt(mFrom+(b.m-mFrom)*(e==null?1:e));
+    altname.textContent=b[LANG];
+  }
   function syncButtons(){
-    function set(el,off){ if(off) el.setAttribute("disabled",""); else el.removeAttribute("disabled"); }
-    set(btn, flying||idx>=SKIES.length-1);
-    set(btndown, flying||idx<=0);
+    function set(el,off){if(off)el.setAttribute("disabled","");else el.removeAttribute("disabled");}
+    set(btn,flying||idx>=BANDS.length-1);
+    set(btndown,flying||idx<=0);
   }
-  function fly(step){
-    var next=Math.min(SKIES.length-1,Math.max(0,idx+step));
+  function fly(stepBy){
+    var next=clamp(idx+stepBy,0,BANDS.length-1);
     if(flying||next===idx) return;
-    idx=next;flying=true;syncButtons();show(idx);
-    setTimeout(function(){flying=false;syncButtons();},2000);
+    mFrom=BANDS[idx].m;idx=next;
+    var b=BANDS[idx];
+    document.documentElement.style.setProperty("--accent",b.accent);
+    document.documentElement.style.setProperty("--accent-soft",b.soft);
+    summit=(idx===BANDS.length-1)?pickVerse():null;
+    caption();
+    if(RM){camY=b.cam;readout();syncButtons();render(nowT());return;}
+    camFrom=camY;camTo=b.cam;camT0=performance.now();flying=true;syncButtons();
+    start();
   }
   btn.addEventListener("click",function(){fly(1);});
   btndown.addEventListener("click",function(){fly(-1);});
 
   /* the reward for reaching the top: a different line each climb.
      Poetry here is public domain — check the date before adding. The Hades II
-     line is a three-word phrase, quoted and credited. */
+     and Toy Story lines are short phrases, quoted and credited. */
   var VERSE=[
     ["Look'd up in perfect silence at the stars","Whitman, When I Heard the Learn'd Astronomer"],
     ["Like to the lark at break of day arising","Shakespeare, Sonnet 29"],
-    ["Moonlight guide you","Melino\u00eb, Hades II"]
+    ["Moonlight guide you","Melinoë, Hades II"],
+    ["To infinity, and beyond!","Buzz Lightyear, Toy Story"]
   ];
   var summit=null,lastVerse=-1;
   function pickVerse(){
     var i;
-    do{ i=Math.floor(Math.random()*VERSE.length); } while(VERSE.length>1&&i===lastVerse);
+    do{i=Math.floor(Math.random()*VERSE.length);}while(VERSE.length>1&&i===lastVerse);
     lastVerse=i;return VERSE[i];
   }
-
-  /* ------------------------------------------------------------ language */
-  var LANG=(navigator.language||"en").slice(0,2)==="zh"?"zh":"en";
-  var MORE={en:{open:"less",shut:"earlier"},zh:{open:"收起",shut:"更早"}};
   /* the same line in either language: a citation, not a translation */
   function caption(){
-    captext.textContent=summit?summit[0]:"";
-    capsrc.textContent =summit?summit[1]:"";
-    /* the band only opens when there is a line, so lower levels leave no gap */
-    document.getElementById("cap").style.minHeight = summit ? "46px" : "0px";
+    cap.textContent="";
+    if(!summit) return;
+    cap.appendChild(document.createTextNode(summit[0]));
+    var s=document.createElement("span");s.className="src";s.textContent=summit[1];
+    cap.appendChild(s);
   }
+
+  /* ========================================================== LANGUAGE */
+  var LANG=(navigator.language||"en").slice(0,2)==="zh"?"zh":"en";
+  var MORE={en:{open:"less",shut:"earlier"},zh:{open:"收起",shut:"更早"}};
   function applyLang(){
     document.body.setAttribute("data-lang",LANG);
     document.documentElement.setAttribute("lang",LANG==="zh"?"zh-Hans":"en");
-    caption();
+    readout();
     syncNews();
   }
   document.getElementById("lang").addEventListener("click",function(){
-    LANG=LANG==="zh"?"en":"zh";applyLang();
+    LANG=LANG==="zh"?"en":"zh";applyLang();scheduleLayout();
   });
 
   /* news: one screen by default, older lines on request */
   var SHOWN=3,items=[].slice.call(document.querySelectorAll("#newslist li")),
       more=document.getElementById("more"),open=false;
   function syncNews(){
-    items.forEach(function(li,i){ if(i>=SHOWN&&!open) li.setAttribute("hidden",""); else li.removeAttribute("hidden"); });
+    items.forEach(function(li,i){if(i>=SHOWN&&!open)li.setAttribute("hidden","");else li.removeAttribute("hidden");});
     more.textContent=open?MORE[LANG].open:MORE[LANG].shut;
     more.setAttribute("aria-expanded",open?"true":"false");
   }
-  if(items.length>SHOWN){ syncNews(); more.addEventListener("click",function(){open=!open;syncNews();}); }
-  else{ more.style.display="none"; }
+  if(items.length>SHOWN){more.addEventListener("click",function(){open=!open;syncNews();});}
+  else{more.style.display="none";}
+
+  /* ============================================================= ICONS */
+  var ICONS={
+    mail:["ooooooooo","oo.....oo","o.o...o.o","o..o.o..o","o...o...o","o.......o","ooooooooo"],
+    code:["...o...o.o...","..o....o..o..",".o....o....o.","o.....o.....o",".o....o....o.","..o..o....o..","...o.o...o..."],
+    scroll:[".ooooooo.","o.......o",".o.ooo.o.",".o.....o.",".o.ooo.o.",".o.....o.","o.......o",".ooooooo."],
+    cap:["....o....","..ooooo..","ooooooooo","..ooooo.o","..o...o.o","..ooooo.."],
+    graph:["o........","o......o.","o.....o..","o.o..o...","o..oo....","o........","ooooooooo"],
+    spark:["..o..",".ooo.","ooooo",".ooo.","..o.."]
+  };
+  [].forEach.call(document.querySelectorAll("[data-icon]"),function(svg){
+    var art=ICONS[svg.getAttribute("data-icon")],d="",y,x;
+    for(y=0;y<art.length;y++) for(x=0;x<art[y].length;x++) if(art[y][x]==="o") d+="M"+x+" "+y+"h1v1h-1z";
+    svg.setAttribute("viewBox","0 0 "+art[0].length+" "+art.length);
+    svg.style.aspectRatio=art[0].length+"/"+art.length;
+    var p=document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d",d);svg.appendChild(p);
+  });
 
   /* assembled at runtime to keep the address out of the static markup */
-  document.getElementById("mail").href=
-    "mailto:"+["l.m.bhamidipaty","sms.ed.ac.uk"].join("@");
+  document.getElementById("mail").href="mailto:"+["l.m.bhamidipaty","sms.ed.ac.uk"].join("@");
 
-  build(SKIES[0]);
-  show(0);
+  /* ============================================================== BOOT */
+  var lt=0;
+  function scheduleLayout(){clearTimeout(lt);lt=setTimeout(layout,120);}
+  var lastW=0;
+  window.addEventListener("resize",function(){
+    /* phones fire resize when the URL bar slides; only re-lay on a width change */
+    if(hero.clientWidth!==lastW){lastW=hero.clientWidth;scheduleLayout();}
+  });
   applyLang();
   syncButtons();
+  lastW=hero.clientWidth;
+  layout();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(layout);
+  start();
 })();
 </script>
 </body>
