@@ -57,6 +57,9 @@
 
   /* one page, two languages: only the matching copy is rendered */
   body[data-lang="en"] .t-zh,body[data-lang="zh"] .t-en{display:none}
+  /* 罗根 keeps its room in English too, so switching language never reflows the hero */
+  body[data-lang="en"] h1 .t-zh{display:inline;visibility:hidden}
+  @media(min-width:760px){h1{white-space:nowrap}}
   .t-zh{letter-spacing:.04em}
   h1 .t-zh{letter-spacing:.02em}
   body[data-lang="zh"] p.body em{font-style:normal;color:#EDE9DF}
@@ -886,26 +889,29 @@
     /* where the craft hovers: beside the name if there's room, under it if not */
     var hr=hero.getBoundingClientRect(),nr=document.getElementById("nm").getBoundingClientRect(),
         rr=document.querySelector(".role").getBoundingClientRect(),
-        h1r=document.querySelector("h1").getBoundingClientRect(),
+        zr=document.querySelector("h1 .zh").getBoundingClientRect(),
         ar=document.querySelector(".alt").getBoundingClientRect(),
         fr=document.querySelector(".hero-foot .wrap").getBoundingClientRect();
     var cwCss=CW*S,cx,topCss;
-    var beside=nr.right-hr.left+60+cwCss/2;
+    /* the name's full extent, 罗根 included, in either language */
+    var h1r={left:nr.left,right:Math.max(nr.right,zr.right),bottom:Math.max(nr.bottom,zr.bottom)};
+    var beside=h1r.right-hr.left+60+cwCss/2;
     if(beside+cwCss/2+16<=cssW&&cssW>=760){
       cx=clamp(Math.max(beside,cssW*.7),0,cssW-cwCss/2-24);
       topCss=Math.max(cssH*.12,80);                         /* pennant clear of the lang button */
     }else{
       cx=cssW*(cssW<520?.5:.62);
-      topCss=rr.bottom-hr.top+18;
+      topCss=rr.top-hr.top+48;                             /* from the chip's top: its height varies by language */
     }
     craftX=Math.round((cx-offX)/S-CW/2);
     craftY=Math.round(topCss/S);
     /* the ladder stays above the controls and the verse */
     craftY=Math.min(craftY,H-CH-8,Math.floor((fr.top-hr.top)/S)-CH-2);
 
-    /* landmarks sit left of the controls, but never push the castle off the edge */
+    /* landmarks sit left of the controls (measured from their right edge, so the
+       button labels' language can't move them), but never push the castle off */
     var axMax=Math.round(W*.4);
-    AX=W<200?Math.round(W*.95):clamp(Math.floor((ar.left-hr.left-offX)/S)-34,Math.min(112,axMax),axMax);
+    AX=W<200?Math.round(W*.95):clamp(Math.floor((ar.right-170-hr.left-offX)/S)-34,Math.min(112,axMax),axMax);
     SUN={x:Math.max(AX-126,14),a:30};
     STARTOP=H+TOPCAM*DSKY;
     /* keep the moon clear of the balloon, and below any text it would cross */
