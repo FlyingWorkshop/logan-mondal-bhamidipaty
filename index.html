@@ -99,10 +99,6 @@
   body[data-lang="zh"] .pxbtn .t-zh{font-family:var(--sans);font-weight:400;letter-spacing:.12em}
 
   .alt{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto}
-  .readout{min-width:150px;text-align:center;padding:6px 12px 7px;background:rgba(22,17,36,.72);
-    clip-path:var(--notch);font-family:var(--pix);font-size:11px;line-height:1.5;letter-spacing:.08em;color:var(--muted)}
-  .readout b{display:block;font-weight:400;font-size:15px;color:var(--accent-soft);letter-spacing:.06em;transition:color 1.2s ease}
-  body[data-lang="zh"] .readout span{font-family:var(--sans);letter-spacing:.14em}
 
   .caption{margin:0;font-family:var(--mincho);font-size:17px;line-height:1.45;color:#EDEAF6;
     text-shadow:2px 2px 0 rgba(8,8,24,.5);max-width:30ch;transition:opacity .5s ease}
@@ -113,6 +109,7 @@
     .role{font-size:10px;letter-spacing:.04em;line-height:1.7}
     .hero-foot{bottom:22px}
     .hero-foot .wrap{flex-direction:column-reverse;align-items:center;text-align:center}
+    .alt{margin-left:0}
     .caption{max-width:none}
   }
 
@@ -193,7 +190,6 @@
           <svg viewBox="0 0 7 4" aria-hidden="true"><path d="M0 0h7v1H6v1H5v1H4v1H3V3H2V2H1V1H0z"/></svg>
           <span class="t-en" lang="en">down</span><span class="t-zh" lang="zh-Hans">下降</span>
         </button>
-        <div class="readout"><b id="altm">400 m</b><span id="altname">ground haze</span></div>
         <button class="pxbtn" id="btn" type="button" aria-label="ascend">
           <span class="t-en" lang="en">up</span><span class="t-zh" lang="zh-Hans">上升</span>
           <svg viewBox="0 0 7 4" aria-hidden="true"><path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z"/></svg>
@@ -370,10 +366,10 @@
 
   /* -------------------------------------------------------- altitude bands */
   var BANDS=[
-    {cam:0,  m:400,  en:"ground haze", zh:"地面薄霭",accent:"#F2A25C",soft:"#F8D3A0"},
-    {cam:150,m:1200, en:"cloud deck",  zh:"云层",    accent:"#7FC4E8",soft:"#C6E8F7"},
-    {cam:300,m:3000, en:"thin air",    zh:"稀薄空气",accent:"#B3A6F0",soft:"#DCD5FA"},
-    {cam:470,m:9000, en:"stars",       zh:"星空",    accent:"#8FE3C0",soft:"#CDF5E4"}
+    {cam:0,   accent:"#F2A25C",soft:"#F8D3A0"},   /* ground haze */
+    {cam:150, accent:"#7FC4E8",soft:"#C6E8F7"},   /* cloud deck */
+    {cam:300, accent:"#B3A6F0",soft:"#DCD5FA"},   /* thin air */
+    {cam:470, accent:"#8FE3C0",soft:"#CDF5E4"}    /* stars */
   ];
   var TOPCAM=BANDS[BANDS.length-1].cam;
 
@@ -785,7 +781,6 @@
     profile(mid,[[74,18],[76,28],[78,33],[96,37],[102,35],[108,39],[118,50],[126,58],
                  [132,64],[136,66],[140,65],[146,60],[156,55],[170,50],[188,42],[206,32],
                  [224,23],[242,18]],AX);
-    for(x=78;x<=96;x++) for(y=27;y<=30;y++) if((x+y)%5) setp(mid,AX+x,y,0);  /* crag face */
     /* the castle: low west ramparts, the New Barracks, Great Hall and Palace,
        the round Half Moon Battery at the east end, flag flying */
     block(mid,-104,-96,39);for(x=-104;x<=-96;x+=2) block(mid,x,x,40);   /* west ramparts */
@@ -1163,7 +1158,6 @@
     if(flying){
       var p=clamp((now-camT0)/FLY,0,1),e=ease(p);
       camY=camFrom+(camTo-camFrom)*e;
-      readout(e);
       if(p>=1){flying=false;camY=camTo;syncButtons();}
     }
     render(now/1000);
@@ -1176,19 +1170,7 @@
 
   /* ========================================================= ALTITUDE UI */
   var btn=document.getElementById("btn"),btndown=document.getElementById("btndown"),
-      altm=document.getElementById("altm"),altname=document.getElementById("altname"),
       cap=document.getElementById("cap");
-  var mFrom=400;
-  function fmt(m){
-    m=Math.round(m/50)*50;
-    var s=String(m).replace(/\B(?=(\d{3})+(?!\d))/g,",");
-    return s+(LANG==="zh"?" 米":" m");
-  }
-  function readout(e){
-    var b=BANDS[idx];
-    altm.textContent=fmt(mFrom+(b.m-mFrom)*(e==null?1:e));
-    altname.textContent=b[LANG];
-  }
   function syncButtons(){
     function set(el,off){if(off)el.setAttribute("disabled","");else el.removeAttribute("disabled");}
     set(btn,flying||idx>=BANDS.length-1);
@@ -1197,13 +1179,13 @@
   function fly(stepBy){
     var next=clamp(idx+stepBy,0,BANDS.length-1);
     if(flying||next===idx) return;
-    mFrom=BANDS[idx].m;idx=next;
+    idx=next;
     var b=BANDS[idx];
     document.documentElement.style.setProperty("--accent",b.accent);
     document.documentElement.style.setProperty("--accent-soft",b.soft);
     summit=(idx===BANDS.length-1)?pickVerse():null;
     caption();
-    if(RM){camY=b.cam;readout();syncButtons();render(nowT());return;}
+    if(RM){camY=b.cam;syncButtons();render(nowT());return;}
     camFrom=camY;camTo=b.cam;camT0=performance.now();flying=true;syncButtons();
     start();
   }
@@ -1241,7 +1223,6 @@
   function applyLang(){
     document.body.setAttribute("data-lang",LANG);
     document.documentElement.setAttribute("lang",LANG==="zh"?"zh-Hans":"en");
-    readout();
     syncNews();
   }
   document.getElementById("lang").addEventListener("click",function(){
