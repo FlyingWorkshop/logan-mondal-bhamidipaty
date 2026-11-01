@@ -41,7 +41,9 @@ plugins:
 exclude:
   - README.md
   - notes.md
+  - CLAUDE.md
   - shortcuts.md
+  - scripts/
   - .sass-cache/
   - .jekyll-cache/
   - gemfiles/
