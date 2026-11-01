@@ -4,7 +4,7 @@
 
   Conceit: FlyingWorkshop. A pixel-art workshop slung under a balloon, hovering
   over Edinburgh at golden hour. "ascend" pans the camera up one continuous
-  column of sky: through the cloud deck, into thin air, up to the stars and the
+  column of sky: through the cloud deck, up to the stars and the
   aurora. The craft holds its place in frame while everything else falls past.
 
   The scene is one <canvas> at art resolution (one canvas pixel = one art
@@ -102,15 +102,16 @@
 
   .caption{margin:0;font-family:var(--mincho);font-size:17px;line-height:1.45;color:#EDEAF6;
     text-shadow:2px 2px 0 rgba(8,8,24,.5);max-width:30ch;transition:opacity .5s ease}
-  .caption .src{display:block;margin-top:6px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#A9AFCB}
+  .caption .src{display:block;margin-top:6px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#CDD2EC}
+  .caption{margin-bottom:44px}
   .caption:empty{display:none}
   @media(max-width:640px){
     .hero{height:clamp(620px,88vh,740px)}
     .role{font-size:10px;letter-spacing:.04em;line-height:1.7}
     .hero-foot{bottom:22px}
-    .hero-foot .wrap{flex-direction:column-reverse;align-items:center;text-align:center}
+    .hero-foot .wrap{flex-direction:column;align-items:center;text-align:center}
     .alt{margin-left:0}
-    .caption{max-width:none}
+    .caption{max-width:none;margin-bottom:0}
   }
 
   /* --------------------------------------------------------------- content */
@@ -368,7 +369,6 @@
   var BANDS=[
     {cam:0,   accent:"#F2A25C",soft:"#F8D3A0"},   /* ground haze */
     {cam:150, accent:"#7FC4E8",soft:"#C6E8F7"},   /* cloud deck */
-    {cam:300, accent:"#B3A6F0",soft:"#DCD5FA"},   /* thin air */
     {cam:470, accent:"#8FE3C0",soft:"#CDF5E4"}    /* stars */
   ];
   var TOPCAM=BANDS[BANDS.length-1].cam;
@@ -983,24 +983,30 @@
         blend(st.x,syy-1,STAR,arm);blend(st.x,syy+1,STAR,arm);
       }
     }
-    /* aurora curtains at the top of the climb */
+    /* aurora at the top of the climb: two folded curtains, green at the hem
+       fading up through teal to violet, with fine rays drifting along them.
+       The hem stays soft so the dark sky under it never reads as hills. */
     var aur=smooth(330,460,camY);
     if(aur>0){
-      var G1=hex("#5CF0A6"),G2=hex("#56D2D6"),G3=hex("#9C7CF2");
-      for(x=0;x<W;x++){
-        var base=AURA+10*Math.sin(x*.035+t*.33)+7*Math.sin(x*.09-t*.55)+4*Math.sin(x*.21+t*.8);
-        var Lr=34+12*Math.sin(x*.02+t*.2);
-        var ci=.35+.65*Math.pow(.5+.5*Math.sin(x*.13+t*.9+Math.sin(x*.045+t*.3)*2.2),2);
-        for(var j=0;j<Lr;j++){
-          var yy=Math.round(H-1-(base+j-shift));
-          if(yy<0||yy>=H) continue;
-          var fr=j/Lr,al2=aur*ci*(j<3?j/3:Math.pow(1-fr,1.5))*.6;
-          al2=Math.floor(al2*7+bay(x,yy))/7;
-          if(al2<=0) continue;
-          var col=fr<.45?mix(G1,G2,fr/.45):mix(G2,G3,(fr-.45)/.55);
-          addpx(x,yy,col,al2*.75);
+      var G1=hex("#62F2A8"),G2=hex("#4FCFD6"),G3=hex("#9C7CF2");
+      [[0,1,0],[24,.45,2.1]].forEach(function(cu){
+        var off=cu[0],gain=cu[1],ph=cu[2];
+        for(x=0;x<W;x++){
+          var base=AURA+off+5*Math.sin(x*.03+t*.25+ph)+3*Math.sin(x*.083-t*.4+ph)+2*Math.sin(x*.19+t*.7);
+          var fold=.5+.5*Math.sin(x*.045+t*.3+ph+2*Math.sin(x*.02+t*.15));
+          var ray=Math.pow(.5+.5*Math.sin(x*.55+t*1.1+ph+3*Math.sin(x*.05+t*.2)),4);
+          var ci=gain*(.25+.75*fold)*(.55+.45*ray),Lr=(26+20*fold)*(.7+.5*ray);
+          for(var j=0;j<Lr;j++){
+            var yy=Math.round(H-1-(base+j-shift));
+            if(yy<0||yy>=H) continue;
+            var fr=j/Lr,al2=aur*ci*.8*Math.min(1,(j+1)/5)*Math.pow(1-fr,1.2);
+            al2=Math.floor(al2*6+bay(x,yy)*.9)/6;
+            if(al2<=0) continue;
+            var col=fr<.35?mix(G1,G2,fr/.35):mix(G2,G3,(fr-.35)/.65);
+            addpx(x,yy,col,al2*.8);
+          }
         }
-      }
+      });
     }
     /* first-quarter moon, lit on the sunward side */
     var my=Math.round(H-1-(MOON.a-shift));
