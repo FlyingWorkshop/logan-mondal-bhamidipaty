@@ -109,6 +109,7 @@
   .caption .src{display:block;margin-top:6px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#A9AFCB}
   .caption:empty{display:none}
   @media(max-width:640px){
+    .hero{height:clamp(620px,88vh,740px)}
     .role{font-size:10px;letter-spacing:.04em;line-height:1.7}
     .hero-foot{bottom:22px}
     .hero-foot .wrap{flex-direction:column-reverse;align-items:center;text-align:center}
@@ -181,8 +182,8 @@
   <button class="lang pxbtn" id="lang" type="button" aria-label="Switch language"><span class="t-en">中文</span><span class="t-zh">EN</span></button>
   <div class="wrap hero-top">
     <h1><span class="nm" id="nm">Logan Mondal Bhamidipaty</span><span class="zh t-zh" lang="zh-Hans">罗根</span></h1>
-    <p class="role"><span class="t-en" lang="en">AI PhD student · University of Edinburgh</span><span
-      class="t-zh" lang="zh-Hans">人工智能博士生 · 爱丁堡大学</span></p>
+    <p class="role"><span class="t-en" lang="en">AI PhD student</span><span
+      class="t-zh" lang="zh-Hans">人工智能博士生</span></p>
   </div>
   <div class="hero-foot">
     <div class="wrap">
@@ -458,7 +459,7 @@
         var nx=dx/(hw+.5),ny=(.45-u)*1.5,nz=Math.sqrt(Math.max(0,1-nx*nx));
         var len=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
         var s=(nx*L[0]+ny*L[1]+nz*L[2])/len;
-        var lv=clamp(step(clamp((s+.12)/1.02,0,1)*3,x,y),0,3);
+        var lv=clamp(Math.floor(clamp((s+.12)/1.02,0,1)*3.6),0,3);
         var phi=Math.asin(clamp(nx,-1,1)),gi=Math.min(6,Math.floor(phi/(Math.PI/2)*3.5+3.5));
         var k;
         if(u>.6&&u<.655) k=lv>=2?"9":"0";
@@ -615,12 +616,13 @@
       if(r===22||r===25||r===28){ctx.fillStyle=p.D;ctx.fillRect(ox+HX+9+off,yb+HY+r,2,1);}
     }
 
-    /* propeller: three edge-on frames */
-    var pf=[0,1,2,1][Math.floor(t*14)%4],span=[4,2,0][pf];
-    ctx.fillStyle=p.M;ctx.fillRect(ox+HX+32,yb+HY+12-span,1,span*2+1);
-    ctx.fillStyle=p.m;ctx.fillRect(ox+HX+32,yb+HY+12,1,1);
-    ctx.save();ctx.globalAlpha=.18;ctx.fillStyle=p.M;
-    ctx.fillRect(ox+HX+32,yb+HY+8,1,9);ctx.restore();
+    /* propeller: a hub on the mount, blades turning through three edge-on frames */
+    var pf=[0,1,2,1][Math.floor(t*14)%4],span=[4,2,1][pf],px=ox+HX+32,py=yb+HY+12;
+    ctx.fillStyle=p.o;ctx.fillRect(px,py-1,2,3);
+    ctx.fillStyle=p.F;ctx.fillRect(px,py,2,1);
+    ctx.fillStyle=p.M;ctx.fillRect(px+2,py-span,1,span);
+    ctx.fillStyle=p.m;ctx.fillRect(px+2,py+1,1,span);
+    ctx.fillStyle=p.f;ctx.fillRect(px+2,py,1,1);
 
     ctx.drawImage(im.a,ox,ya);
 
@@ -676,11 +678,11 @@
         var best=-1,bv=0;
         if(y<h-1) blobs.forEach(function(b){
           var dx=x+.5-b[0],dy=y+.5-b[1],dd=Math.sqrt(dx*dx+dy*dy),inside=b[2]-dd;
-          if(inside>best){best=inside;bv=(-.55*dx-.85*dy)/b[2];}
+          if(inside>best){best=inside;bv=(-.55*dx+.85*dy)/b[2];}
         });
         mask[y].push(best>0);
-        var v=.5+.42*bv-.38*(y/h);
-        tone[y].push(clamp(step(clamp(v,0,1)*2.4,x,y),0,2));
+        var v=.5+.42*bv-.38*(1-y/h);
+        tone[y].push(clamp(Math.floor(clamp(v,0,1)*2.4),0,2));
       }
     }
     function render(pal){
@@ -688,9 +690,9 @@
       for(y=0;y<h;y++) for(x=0;x<w;x++){
         if(!mask[y][x]) continue;
         var t=tone[y][x];
-        var up=y>0&&mask[y-1][x],lf=x>0&&mask[y][x-1];
-        if((!up||!lf)&&t>=1&&y<h*.7) t=3;
-        if(y>=h-2) t=Math.min(t,0);
+        var dn=y<h-1&&mask[y+1][x],lf=x>0&&mask[y][x-1];
+        if((!dn||!lf)&&t>=1&&y>h*.3) t=3;                       /* sunlit underside */
+        if(y<1) t=Math.min(t,0);
         g.fillStyle=css(pal[t]);g.fillRect(x,y,1,1);
       }
       return c;
@@ -730,7 +732,7 @@
             var v=1-d/16-(top[x]-8)/30;
             if(d2>=0&&d2<2&&d>6) v=.9;          /* a second row of billows catching light */
             else if(d2>=2&&d2<6&&d>6) v=.35;
-            t=clamp(step(clamp(v,0,1)*2.4,x,y),0,2);
+            t=clamp(Math.floor(clamp(v,0,1)*2.4),0,2);
           }
           g.fillStyle=css(P[t]);g.fillRect(x,y,1,1);
         }
@@ -765,16 +767,16 @@
     var far=grid(),water=[];
     for(x=0;x<W;x++){
       var hf=30+6*Math.sin(x*.021+1)+4*Math.sin(x*.057+2)+2*Math.sin(x*.13)
-            +10*smooth(0,1,1-Math.abs((x-AX+170)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110));
+            +10*smooth(0,1,1-Math.abs((x-AX+150)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110));
       fillCol(far,x,hf);
     }
     /* mid: Calton Hill, castle rock, Arthur's Seat */
     var mid=grid();
     for(x=0;x<W;x++) fillCol(mid,x,17+3*Math.sin(x*.05)+2*Math.sin(x*.11+1));
-    profile(mid,[[40,18],[45,30],[47,40],[54,42],[68,45],[76,43],[82,48],[90,54],[96,58],[100,59],
-                 [104,57],[112,52],[124,46],[140,41],[160,31],[180,23],[200,18]],AX);
+    profile(mid,[[40,18],[45,31],[47,42],[54,46],[68,50],[76,49],[84,54],[92,60],[97,64],[100,66],
+                 [103,66],[107,62],[114,58],[126,53],[142,46],[160,34],[180,24],[200,18]],AX);
     profile(mid,[[-36,18],[-30,26],[-25,32],[-19,36],[18,36],[24,31],[30,23],[38,18]],AX);
-    profile(mid,[[-138,18],[-128,26],[-118,32],[-104,34],[-90,31],[-80,24],[-70,18]],AX);
+    profile(mid,[[-118,18],[-108,26],[-98,32],[-84,34],[-70,31],[-60,24],[-50,18]],AX);
     /* the castle */
     block(mid,-23,-15,41);block(mid,-22,-16,43);              /* half moon battery */
     block(mid,-14,-5,50);                                      /* palace */
@@ -787,9 +789,9 @@
     setp(mid,AX+14,60,1);setp(mid,AX+15,60,1);setp(mid,AX+14,59,1);
     block(mid,16,22,42);
     /* Calton Hill: Nelson's telescope tower, the unfinished Parthenon */
-    block(mid,-99,-97,44);block(mid,-98,-98,47);
-    block(mid,-121,-109,41);
-    for(x=-120;x<=-110;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
+    block(mid,-79,-77,44);block(mid,-78,-78,47);
+    block(mid,-101,-89,41);
+    for(x=-100;x<=-90;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
 
     /* near: tenements, spires, a clock tower */
     var near=grid();windows=[];cat=null;
@@ -803,14 +805,19 @@
         if(pitched) hh=bh+Math.floor(Math.min(i,bw-1-i)/2)+1;
         fillCol(near,x+i,hh);
       }
-      if(!pitched&&r()<.8){                                   /* chimney stacks with pots */
+      var catHere=!cat&&!pitched&&rel>-100&&rel<-50&&bw>=8;
+      if(catHere) cat={x:x+2,h:bh};
+      else if(!pitched&&r()<.8){                              /* chimney stacks with pots */
         var cxs=x+1+Math.floor(r()*(bw-3));
         fillCol(near,cxs,bh+3);fillCol(near,cxs+1,bh+3);setp(near,cxs,bh+3,1);
       }
-      if(!cat&&!pitched&&rel>-110&&rel<-60&&bw>=7) cat={x:x+bw-6,h:bh};
-      for(var wy=3;wy<bh-2;wy+=3) for(var wx=x+1;wx<x+bw-1;wx+=2){
-        if(r()<.2) windows.push({x:wx,h:wy,tall:r()<.4,ph:r()*6.28,sp:.02+r()*.05,
-          c:r()<.7?"#FFD07A":"#F2A35E"});
+      /* sash windows, a whole floor lit or dark, on the building's own grid */
+      var col0=x+1+Math.floor(r()*2);
+      for(var wy=4;wy<bh-1;wy+=3){
+        if(r()>=.32) continue;
+        var fph=r()*6.28,fsp=.02+r()*.05,fc=r()<.7?"#FFD07A":"#F2A35E";
+        for(var wx=col0;wx<x+bw-1;wx+=2) if(r()<.9)
+          windows.push({x:wx,h:wy,tall:true,ph:fph,sp:fsp,c:fc});
       }
       x+=bw+(r()<.25?1:0);
     }
@@ -838,10 +845,10 @@
         var p=y*W+x;
         if(!g[p]) continue;
         var up=y>0&&g[p-W],lf=x>0&&g[p-1];
-        var col;
-        if(!up) col=R;
-        else if(!lf) col=RL;
-        else{var q=step((y/LH)*3,x,y)/3;col=mix(T,Bt,q);}
+        var q=step((y/LH)*3,x,y)/3,col=mix(T,Bt,q);
+        var fall=.7*clamp(Math.abs(x-SUN.x)/(W*.6),0,1);
+        if(!up) col=mix(R,col,fall);
+        else if(!lf) col=mix(RL,col,fall);
         d[p*4]=col[0];d[p*4+1]=col[1];d[p*4+2]=col[2];d[p*4+3]=255;
       }
       gx.putImageData(id,0,0);
@@ -855,7 +862,7 @@
 
     var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
     var mg=midC.getContext("2d");
-    mg.fillStyle="#FFCB78";
+    mg.fillStyle="#BD9575";
     [[-12,46],[-9,46],[-1,43],[3,43],[7,43],[13,50],[19,39]].forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});
     var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
     return {far:farC,mid:midC,near:nearC,water:water};
@@ -865,7 +872,8 @@
   function layout(){
     var dpr=window.devicePixelRatio||1;
     var cssW=hero.clientWidth,cssH=hero.clientHeight;
-    var base=cssW>=1100?4:3;
+    /* the bigger pixel only where the hero is tall enough to hold the craft */
+    var base=(cssW>=1100&&cssH>=600)?4:3;
     S=Math.max(2,Math.round(base*dpr))/dpr;
     W=Math.ceil(cssW/S);H=Math.ceil(cssH/S);
     cv.width=W;cv.height=H;
@@ -876,26 +884,36 @@
 
     /* where the craft hovers: beside the name if there's room, under it if not */
     var hr=hero.getBoundingClientRect(),nr=document.getElementById("nm").getBoundingClientRect(),
-        rr=document.querySelector(".role").getBoundingClientRect();
+        rr=document.querySelector(".role").getBoundingClientRect(),
+        h1r=document.querySelector("h1").getBoundingClientRect(),
+        ar=document.querySelector(".alt").getBoundingClientRect(),
+        fr=document.querySelector(".hero-foot .wrap").getBoundingClientRect();
     var cwCss=CW*S,cx,topCss;
     var beside=nr.right-hr.left+60+cwCss/2;
     if(beside+cwCss/2+16<=cssW&&cssW>=760){
       cx=clamp(Math.max(beside,cssW*.7),0,cssW-cwCss/2-24);
-      topCss=Math.max(cssH*.12,30);
+      topCss=Math.max(cssH*.12,80);                         /* pennant clear of the lang button */
     }else{
       cx=cssW*(cssW<520?.5:.62);
       topCss=rr.bottom-hr.top+18;
     }
     craftX=Math.round((cx-offX)/S-CW/2);
     craftY=Math.round(topCss/S);
-    craftY=Math.min(craftY,H-CH-8);
+    /* the ladder stays above the controls and the verse */
+    craftY=Math.min(craftY,H-CH-8,Math.floor((fr.top-hr.top)/S)-CH-2);
 
-    AX=Math.round(W*(W<200?.3:.4));
+    /* landmarks sit left of the controls, but never push Calton Hill off the edge */
+    var axMax=Math.round(W*(W<200?.3:.4));
+    AX=W<200?axMax:clamp(Math.floor((ar.left-hr.left-offX)/S)-60,Math.min(105,axMax),axMax);
     SUN={x:Math.round(W*(W<200?.2:.17)),a:30};
     STARTOP=H+TOPCAM*DSKY;
-    /* keep the moon clear of the balloon */
-    var mx=craftX>W/2?craftX-24:craftX+CW+24;
-    MOON={x:Math.round(clamp(mx,12,W-12)),a:Math.round(STARTOP-H*.22)};
+    /* keep the moon clear of the balloon, and below any text it would cross */
+    var mx=Math.round(clamp(craftX>W/2?craftX-24:craftX+CW+24,12,W-12)),my=Math.round(H*.22);
+    [h1r,rr].forEach(function(b){
+      var l=(b.left-hr.left-offX)/S,rgt=(b.right-hr.left-offX)/S;
+      if(mx+9>l&&mx-9<rgt) my=Math.max(my,Math.ceil((b.bottom-hr.top)/S)+10);
+    });
+    MOON={x:mx,a:Math.round(STARTOP-my)};
     AURA=STARTOP-H*.82;
 
     var r=rng(11);
@@ -1079,31 +1097,37 @@
         ctx.fillStyle=w.c;
         ctx.fillRect(w.x,yn+LH-1-w.h,1,w.tall?2:1);
       });
-      /* a rooftop cat, watching the balloon */
+      /* a rooftop cat, side-on, watching the balloon */
       if(cat){
-        var cx=cat.x,cy=yn+LH-1-cat.h;
+        var cx=cat.x+1,roof=yn+LH-cat.h;
+        function cp(dx,dy){ctx.fillRect(cx+dx,roof-dy,1,1);}
         ctx.fillStyle="#130E1B";
-        ctx.fillRect(cx,cy-6,1,1);ctx.fillRect(cx+4,cy-6,1,1);
-        ctx.fillRect(cx,cy-5,5,3);ctx.fillRect(cx+1,cy-2,3,1);ctx.fillRect(cx,cy-1,5,1);
-        var tail=RM?0:Math.floor(t*1.4)%3;
-        ctx.fillRect(cx+5,cy-1,1,1);
-        if(tail===0){ctx.fillRect(cx+6,cy-2,1,1);ctx.fillRect(cx+6,cy-3,1,1);}
-        else if(tail===1){ctx.fillRect(cx+6,cy-2,1,1);ctx.fillRect(cx+7,cy-3,1,1);}
-        else {ctx.fillRect(cx+6,cy-1,1,1);ctx.fillRect(cx+7,cy-2,1,1);}
+        [[0,1],[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[4,2],[3,3],[4,3],[5,3],[3,4],[5,4]]
+          .forEach(function(p){cp(p[0],p[1]);});
+        var tail=RM?0:Math.floor(t*1.2)%3;
+        cp(-1,1);
+        if(tail===0) cp(-1,2); else if(tail===1) cp(-2,2); else cp(-2,1);
+        ctx.fillStyle="#6E4C66";cp(1,2);                       /* sun on its back */
         var blink=!RM&&(t%4.6)<.16;
-        if(!blink){ctx.fillStyle="#F6DE74";ctx.fillRect(cx+1,cy-4,1,1);ctx.fillRect(cx+3,cy-4,1,1);}
+        if(!blink){ctx.fillStyle="#F6DE74";cp(4,3);}
       }
     }
   }
 
   /* hand the scene to the page: dither down into the content's ground */
   function drawFade(){
-    var NB=hex("#16121F"),FH=10,y,x;
-    ctx.fillStyle=css(NB);
+    var NB=hex("#16121F"),FH=12,y,x;
+    var id=ctx.getImageData(0,H-FH,W,FH),d=id.data;
     for(y=0;y<FH;y++){
-      var dens=(y+1)/FH;
-      for(x=0;x<W;x++) if(dens*dens>bay(x,y)) ctx.fillRect(x,H-FH+y,1,1);
+      var k=2*Math.pow((y+1)/FH,1.4);
+      for(x=0;x<W;x++){
+        var b=bay(x,y),lv=k>1+b?1:k>b?.55:0;
+        if(!lv) continue;
+        var i=(y*W+x)*4;
+        d[i]+=(NB[0]-d[i])*lv;d[i+1]+=(NB[1]-d[i+1])*lv;d[i+2]+=(NB[2]-d[i+2])*lv;
+      }
     }
+    ctx.putImageData(id,0,H-FH);
   }
 
   function render(t){
@@ -1200,6 +1224,7 @@
     cap.appendChild(document.createTextNode(summit[0]));
     var s=document.createElement("span");s.className="src";s.textContent=summit[1];
     cap.appendChild(s);
+    scheduleLayout();                                        /* the verse can push the controls up */
   }
 
   /* ========================================================== LANGUAGE */
