@@ -743,8 +743,10 @@
   }
 
   /* ================================================================ LAND */
-  /* Edinburgh from the south-west at sundown: Pentlands and the Forth behind,
-     castle rock and Arthur's Seat in the middle, the Old Town roofline in front */
+  /* Edinburgh looking north from Blackford Hill on a summer evening: the sun
+     going down in the north-west, the Forth and the Fife hills behind, castle
+     rock on the left, Calton Hill beyond the Old Town, Arthur's Seat close on
+     the right. Landmarks are bunched together a little so they all fit. */
   var LH=110;
   function makeLand(){
     var r=rng(7),x,y,i;
@@ -763,49 +765,54 @@
     }
     function block(g,x0,x1,top){for(var xx=x0;xx<=x1;xx++)fillCol(g,AX+xx,top);}
 
-    /* far: hills and the firth */
+    /* far: the Fife hills over the firth */
     var far=grid(),water=[];
     for(x=0;x<W;x++){
       var hf=30+6*Math.sin(x*.021+1)+4*Math.sin(x*.057+2)+2*Math.sin(x*.13)
-            +10*smooth(0,1,1-Math.abs((x-AX+150)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110));
+            +10*smooth(0,1,1-Math.abs((x-AX-10)/90))+7*smooth(0,1,1-Math.abs((x-AX-300)/110))
+            -12*smooth(0,1,1-Math.abs((x-SUN.x)/46));         /* open water under the sun */
       fillCol(far,x,hf);
     }
-    /* mid: Calton Hill, castle rock, Arthur's Seat */
+    /* mid: castle rock, Calton Hill, Arthur's Seat */
     var mid=grid();
     for(x=0;x<W;x++) fillCol(mid,x,17+3*Math.sin(x*.05)+2*Math.sin(x*.11+1));
-    profile(mid,[[40,18],[45,31],[47,42],[54,46],[68,50],[76,49],[84,54],[92,60],[97,64],[100,66],
-                 [103,66],[107,62],[114,58],[126,53],[142,46],[160,34],[180,24],[200,18]],AX);
-    profile(mid,[[-36,18],[-30,26],[-25,32],[-19,36],[18,36],[24,31],[30,23],[38,18]],AX);
-    profile(mid,[[-118,18],[-108,26],[-98,32],[-84,34],[-70,31],[-60,24],[-50,18]],AX);
-    /* the castle */
-    block(mid,-23,-15,41);block(mid,-22,-16,43);              /* half moon battery */
-    block(mid,-14,-5,50);                                      /* palace */
-    for(x=-14;x<=-5;x+=2) block(mid,x,x,51);
-    block(mid,-5,11,46);                                       /* great hall */
-    block(mid,-4,10,48);
-    block(mid,11,15,54);                                       /* tower */
-    for(x=11;x<=15;x+=2) block(mid,x,x,55);
-    block(mid,13,13,61);                                       /* flagpole */
-    setp(mid,AX+14,60,1);setp(mid,AX+15,60,1);setp(mid,AX+14,59,1);
-    block(mid,16,22,42);
+    /* castle rock: sheer to the west, tailing off east down the Royal Mile */
+    profile(mid,[[-114,18],[-111,27],[-108,33],[-103,37],[-62,37],[-52,34],[-40,30],[-24,26],
+                 [-6,22],[12,19],[22,18]],AX);
+    /* Calton Hill */
+    profile(mid,[[28,18],[35,25],[42,31],[50,34],[62,34],[70,30],[78,24],[84,18]],AX);
+    /* Arthur's Seat: Salisbury Crags' cliff, then the lion's head */
+    profile(mid,[[74,18],[76,28],[78,33],[96,37],[102,35],[108,39],[118,50],[126,58],
+                 [132,64],[136,66],[140,65],[146,60],[156,55],[170,50],[188,42],[206,32],
+                 [224,23],[242,18]],AX);
+    for(x=78;x<=96;x++) for(y=27;y<=30;y++) if((x+y)%5) setp(mid,AX+x,y,0);  /* crag face */
+    /* the castle: low west ramparts, the New Barracks, Great Hall and Palace,
+       the round Half Moon Battery at the east end, flag flying */
+    block(mid,-104,-96,39);for(x=-104;x<=-96;x+=2) block(mid,x,x,40);   /* west ramparts */
+    block(mid,-95,-80,44);                                               /* New Barracks */
+    block(mid,-79,-71,46);block(mid,-78,-72,47);                         /* Great Hall */
+    block(mid,-70,-63,49);                                               /* Palace */
+    block(mid,-66,-63,54);for(x=-66;x<=-63;x+=2) block(mid,x,x,55);      /* Palace tower */
+    block(mid,-65,-65,61);setp(mid,AX-64,60,1);setp(mid,AX-63,60,1);setp(mid,AX-64,59,1);
+    block(mid,-62,-54,42);block(mid,-61,-55,44);block(mid,-60,-56,45);   /* Half Moon Battery */
     /* Calton Hill: Nelson's telescope tower, the unfinished Parthenon */
-    block(mid,-79,-77,44);block(mid,-78,-78,47);
-    block(mid,-101,-89,41);
-    for(x=-100;x<=-90;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
+    block(mid,40,42,44);block(mid,41,41,47);
+    block(mid,50,62,41);
+    for(x=51;x<=61;x+=2) for(y=35;y<=39;y++) setp(mid,AX+x,y,0);
 
     /* near: tenements, spires, a clock tower */
     var near=grid();windows=[];cat=null;
     x=-6;
     while(x<W+6){
       var bw=5+Math.floor(r()*8),rel=x-AX;
-      var bh=8+Math.floor(r()*7)+(rel>-70&&rel<10?6:0)+(rel>-40&&rel<-10?3:0);
+      var bh=8+Math.floor(r()*7)+(rel>-56&&rel<14?6:0)+(rel>-26&&rel<4?3:0);
       var pitched=r()<.5;
       for(i=0;i<bw;i++){
         var hh=bh;
         if(pitched) hh=bh+Math.floor(Math.min(i,bw-1-i)/2)+1;
         fillCol(near,x+i,hh);
       }
-      var catHere=!cat&&!pitched&&rel>-100&&rel<-50&&bw>=8;
+      var catHere=!cat&&!pitched&&rel>-136&&rel<-96&&bw>=8;
       if(catHere) cat={x:x+2,h:bh};
       else if(!pitched&&r()<.8){                              /* chimney stacks with pots */
         var cxs=x+1+Math.floor(r()*(bw-3));
@@ -822,20 +829,21 @@
       x+=bw+(r()<.25?1:0);
     }
     /* Scott Monument: a gothic rocket */
+    var SM=-32;
     for(y=12;y<=48;y++){
       var half=Math.round(4.5*(1-(y-12)/38));
-      for(x=-half;x<=half;x++) setp(near,AX+20+x,y,1);
+      for(x=-half;x<=half;x++) setp(near,AX+SM+x,y,1);
     }
     [[-4,30],[4,30],[-3,38],[3,38],[-5,22],[5,22]].forEach(function(p){
-      setp(near,AX+20+p[0],p[1],1);setp(near,AX+20+p[0],p[1]+1,1);setp(near,AX+20+p[0],p[1]+2,1);});
-    for(y=13;y<=17;y++){setp(near,AX+19,y,0);setp(near,AX+21,y,0);}
-    /* Balmoral clock tower */
-    block(near,44,56,20);block(near,48,52,33);block(near,49,51,36);block(near,50,50,39);
-    windows.push({x:AX+50,h:29,tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});
+      setp(near,AX+SM+p[0],p[1],1);setp(near,AX+SM+p[0],p[1]+1,1);setp(near,AX+SM+p[0],p[1]+2,1);});
+    for(y=13;y<=17;y++){setp(near,AX+SM-1,y,0);setp(near,AX+SM+1,y,0);}
     /* St Giles' crown steeple */
-    block(near,-48,-42,28);
-    for(x=-48;x<=-42;x++) if((x+48)%3!==1) fillCol(near,AX+x,33);
-    block(near,-46,-44,35);block(near,-45,-45,39);
+    block(near,-8,-2,28);
+    for(x=-8;x<=-2;x++) if((x+8)%3!==1) fillCol(near,AX+x,33);
+    block(near,-6,-4,35);block(near,-5,-5,39);
+    /* Balmoral clock tower */
+    block(near,14,26,20);block(near,18,22,33);block(near,19,21,36);block(near,20,20,39);
+    windows.push({x:AX+20,h:29,tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});
 
     /* shade a layer: vertical ramp, sunlit rim along top and left edges */
     function shade(g,top,bot,rim,rimL){
@@ -863,7 +871,7 @@
     var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
     var mg=midC.getContext("2d");
     mg.fillStyle="#BD9575";
-    [[-12,46],[-9,46],[-1,43],[3,43],[7,43],[13,50],[19,39]].forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});
+    [[-92,41],[-88,41],[-84,41],[-76,43],[-68,46],[-65,51],[-58,39]].forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});
     var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
     return {far:farC,mid:midC,near:nearC,water:water};
   }
@@ -902,10 +910,10 @@
     /* the ladder stays above the controls and the verse */
     craftY=Math.min(craftY,H-CH-8,Math.floor((fr.top-hr.top)/S)-CH-2);
 
-    /* landmarks sit left of the controls, but never push Calton Hill off the edge */
-    var axMax=Math.round(W*(W<200?.3:.4));
-    AX=W<200?axMax:clamp(Math.floor((ar.left-hr.left-offX)/S)-60,Math.min(105,axMax),axMax);
-    SUN={x:Math.round(W*(W<200?.2:.17)),a:30};
+    /* landmarks sit left of the controls, but never push the castle off the edge */
+    var axMax=Math.round(W*.4);
+    AX=W<200?Math.round(W*.95):clamp(Math.floor((ar.left-hr.left-offX)/S)-34,Math.min(112,axMax),axMax);
+    SUN={x:Math.max(AX-126,14),a:30};
     STARTOP=H+TOPCAM*DSKY;
     /* keep the moon clear of the balloon, and below any text it would cross */
     var mx=Math.round(clamp(craftX>W/2?craftX-24:craftX+CW+24,12,W-12)),my=Math.round(H*.22);
@@ -1001,14 +1009,14 @@
         }
       }
     }
-    /* moon, lit from the left */
+    /* first-quarter moon, lit on the sunward side */
     var my=Math.round(H-1-(MOON.a-shift));
     if(my>-24&&my<H+24){
       var M1=hex("#F4F1DF"),M2=hex("#CFCBE0"),MC=hex("#ABA9C6"),MG=hex("#B9C4F2");
       for(y=-20;y<=20;y++) for(x=-20;x<=20;x++){
         var dm=Math.sqrt(x*x+y*y);
         if(dm<=7.3){
-          var shadow=Math.sqrt((x-3.5)*(x-3.5)+(y+1)*(y+1))<6.2;
+          var shadow=x>0;
           if(shadow) continue;
           blend(MOON.x+x,my+y,(dm>6.2?M2:M1),1);
           continue;
