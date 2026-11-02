@@ -724,9 +724,22 @@
       SEA_NIGHT=["#1A1F46","#262B58","#454D88","#7780BC","#BCC4EE"].map(hex);
   function seaTile(TW,SH,seed,pal,pal2){
     var r=rng(seed),blobs=[],i,x,y;
-    for(i=0;i<TW/9;i++) blobs.push([i*9+r()*6,9+r()*9,6+r()*8]);
+    /* cloud tops from above are cauliflower: big domes of mixed size, crusted
+       with small bubbles, the odd turret pushing up through the rest */
+    function crust(list,n,lift,rmin,rmax){
+      var big=list.slice();
+      for(var k=0;k<n;k++){
+        var bx=r()*TW,by=surf(big,bx);
+        if(by>1e8) continue;
+        list.push([bx,by+lift+r()*2,rmin+r()*(rmax-rmin)]);
+      }
+    }
+    for(i=0;i<TW/15;i++) blobs.push([i*15+r()*7,15+r()*8,8+r()*8]);
+    crust(blobs,Math.round(TW/5),1.5,2.5,5.5);
+    for(i=0;i<2;i++){var tx=r()*TW;blobs.push([tx,surf(blobs,tx)+3,4+r()*2]);}   /* turrets */
     var lower=[];
-    for(i=0;i<TW/14;i++) lower.push([i*14+r()*8,26+r()*10,7+r()*7]);
+    for(i=0;i<TW/16;i++) lower.push([i*16+r()*8,30+r()*9,8+r()*7]);
+    crust(lower,Math.round(TW/7),1.5,2.5,5);
     function surf(list,x){
       var best=1e9;
       list.forEach(function(b){
@@ -738,7 +751,9 @@
       return best;
     }
     var top=[],top2=[];
-    for(x=0;x<TW;x++){top.push(Math.min(surf(blobs,x),20));top2.push(surf(lower,x));}
+    for(x=0;x<TW;x++){top.push(Math.min(surf(blobs,x),22));top2.push(surf(lower,x));}
+    var lo=Math.min.apply(null,top);                     /* nothing may poke out of the tile and be cut flat */
+    if(lo<1) for(x=0;x<TW;x++) top[x]+=1-lo;
     function render(P){
       var c=canvas(TW,SH),g=c.getContext("2d");
       for(x=0;x<TW;x++){
@@ -1117,7 +1132,7 @@
     var DK=seaY(camY)-4,gk=smooth(95,150,camY)*(1-smooth(230,380,camY));
     if(gk>0){
       var GW=hex("#FFB46E"),GR=hex("#F28FA0");
-      for(y=Math.max(0,Math.round(DK-56));y<Math.min(H,DK+6);y++){
+      for(y=Math.max(0,Math.round(DK-56));y<Math.min(H,DK+30);y++){   /* runs on under the deck, behind any dips */
         var up=(DK-y)/56;
         for(x=0;x<W;x++){
           var al=gk*(.35+.65*Math.pow(1-x/W,1.3))*(up<0?1:Math.pow(1-up,1.4))*.95;
