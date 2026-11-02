@@ -881,8 +881,8 @@
     }
     /* the Hub: the Old Town's tallest spire, just east of the castle */
     block(near,-46,-36,27);block(near,-45,-37,28);block(near,-44,-38,29);   /* tall Castlehill houses */
-    block(near,-40,-36,42);
-    stamp(["..#..","..#..","..#..","..#..","..#..","..#..","..#..","#.#.#","#.#.#"],-40,50);
+    block(near,-41,-35,40);
+    stamp(["...#...","...#...","...#...","..###..","..###..","..###..","#.###.#","#.###.#","#######"],-41,49);
     /* Scott Monument over the roofs, as from the south: spire, lantern, tower,
        corner pinnacles with flying buttresses, down to the cornice */
     var SM=-27;
@@ -1035,6 +1035,8 @@
     craftY=Math.round(topCss/S);
     /* the ladder stays above the controls and the verse */
     craftY=Math.min(craftY,H-CH-8,Math.floor((fr.top-hr.top)/S)-CH-2);
+    /* parked at the deck, the cloud tops settle just under the basket, wherever the craft hangs */
+    SEAK[2][1]=clamp((craftY+CH-8)/H,.66,.8);
 
     /* landmarks sit left of the controls (measured from their right edge, so the
        button labels' language can't move them), but never push the castle off */
@@ -1234,9 +1236,11 @@
       var y=Math.round(H-1-(c.alt-camY*c.d))-sp.h;
       if(y>H||y+sp.h<0) continue;
       var al=1;
-      if(front){                                          /* thin out where it would sit on the balloon */
+      if(front){
+        var dmin=1e9;BANDS.forEach(function(b){dmin=Math.min(dmin,Math.abs(camY-b.cam));});
+        al=smooth(6,40,dmin);if(al<=0) continue;                                          /* thin out where it would sit on the balloon */
         var dx=Math.abs(x+sp.w/2-craftX-CW/2)/((sp.w+CW)/2),dy=Math.abs(y+sp.h/2-craftY-CH/2)/((sp.h+CH)/2);
-        al=1-.8*(1-smooth(.55,1,dx))*(1-smooth(.55,1,dy));
+        al*=1-.8*(1-smooth(.55,1,dx))*(1-smooth(.55,1,dy));
       }
       ctx.globalAlpha=al;ctx.drawImage(sp.day,x,y);
       if(n>.02){ctx.globalAlpha=al*n;ctx.drawImage(sp.night,x,y);}
@@ -1253,9 +1257,10 @@
     }
     return SEAK[SEAK.length-1][1]*H;
   }
-  function drawSea(tile,t,y,speed,n,alpha){
+  function drawSea(tile,t,y,speed,n,alpha,ph){
     if(alpha<=0||y>=H) return;
-    var off=Math.round(((t*speed)%tile.w+tile.w)%tile.w);
+    var p=t*speed+speed*2.4*Math.sin(t*.085+(ph||0));       /* speed swells by about a fifth */
+    var off=Math.round((p%tile.w+tile.w)%tile.w);
     ctx.globalAlpha=alpha;
     for(var x=-off;x<W;x+=tile.w){
       ctx.drawImage(tile.day,x,Math.round(y));
@@ -1324,10 +1329,10 @@
     drawClouds(t,false,n);
     drawLand(t);
     var sy=seaY(camY),sa=smooth(50,140,camY);
-    drawSea(sea.back,t,sy-9,1.2,n,sa);
+    drawSea(sea.back,t,sy-9,1.2,n,sa,0);
     drawCraft(t);
-    drawSea(sea.front,t,sy,3,n,sa);
-    drawSea(sea.front,t+41,sy+40,4.6,n,sa);
+    drawSea(sea.front,t,sy,3,n,sa,2.1);
+    drawSea(sea.front,t+41,sy+40,4.6,n,sa,4.4);
     drawClouds(t,true,n);
     drawFade();
   }
@@ -1338,7 +1343,7 @@
     raf=0;
     if(!running) return;
     raf=requestAnimationFrame(tick);
-    if(now-lastDraw<1000/30) return;
+    if(now-lastDraw<1000/62) return;
     lastDraw=now;
     if(flying){
       var p=clamp((now-camT0)/FLY,0,1),e=ease(p);
