@@ -722,56 +722,60 @@
   /* the cloud deck: a tileable sea of billows, lit on top */
   var SEA_DAY=["#9A86B4","#B7869F","#E5B6B0","#FFDCC8","#FFF3E4"].map(hex),
       SEA_NIGHT=["#1A1F46","#262B58","#454D88","#7780BC","#BCC4EE"].map(hex);
-  function seaTile(TW,SH,seed,pal,pal2){
-    var r=rng(seed),blobs=[],i,x,y;
+  /* k scales every feature (rows nearer the eye are bigger), vy squashes the
+     domes (rows near the horizon are seen edge-on), rim is the sunlit lip */
+  function seaTile(TW,seed,pal,pal2,k,vy,rim,far){
+    var r=rng(seed),blobs=[],i,x,y,SH=Math.round(70*k);
     /* cloud tops from above are cauliflower: big domes of mixed size, crusted
        with small bubbles, the odd turret pushing up through the rest */
     function crust(list,n,lift,rmin,rmax){
       var big=list.slice();
-      for(var k=0;k<n;k++){
+      for(var j=0;j<n;j++){
         var bx=r()*TW,by=surf(big,bx);
         if(by>1e8) continue;
-        list.push([bx,by+lift+r()*2,rmin+r()*(rmax-rmin)]);
+        list.push([bx,by+(lift+r()*2)*k,(rmin+r()*(rmax-rmin))*k]);
       }
     }
-    for(i=0;i<TW/15;i++) blobs.push([i*15+r()*7,15+r()*8,8+r()*8]);
-    crust(blobs,Math.round(TW/5),1.5,2.5,5.5);
-    for(i=0;i<2;i++){var tx=r()*TW;blobs.push([tx,surf(blobs,tx)+3,4+r()*2]);}   /* turrets */
+    for(i=0;i<TW/(15*k);i++) blobs.push([(i*15+r()*7)*k,(15+r()*8)*k,(8+r()*8)*k]);
+    crust(blobs,Math.round(TW/(5*k)),1.5,2.5,5.5);
+    if(!far) for(i=0;i<2;i++){var tx=r()*TW;blobs.push([tx,surf(blobs,tx)+3*k,(4+r()*2)*k]);}   /* turrets */
     var lower=[];
-    for(i=0;i<TW/16;i++) lower.push([i*16+r()*8,30+r()*9,8+r()*7]);
-    crust(lower,Math.round(TW/7),1.5,2.5,5);
+    for(i=0;i<TW/(16*k);i++) lower.push([(i*16+r()*8)*k,(30+r()*9)*k,(8+r()*7)*k]);
+    crust(lower,Math.round(TW/(7*k)),1.5,2.5,5);
     function surf(list,x){
       var best=1e9;
       list.forEach(function(b){
-        for(var k=-1;k<=1;k++){
-          var dx=x+.5-(b[0]+k*TW);
-          if(Math.abs(dx)<b[2]){var s=b[1]-Math.sqrt(b[2]*b[2]-dx*dx);if(s<best)best=s;}
+        for(var j=-1;j<=1;j++){
+          var dx=x+.5-(b[0]+j*TW);
+          if(Math.abs(dx)<b[2]){var s=b[1]-vy*Math.sqrt(b[2]*b[2]-dx*dx);if(s<best)best=s;}
         }
       });
       return best;
     }
     var top=[],top2=[];
-    for(x=0;x<TW;x++){top.push(Math.min(surf(blobs,x),22));top2.push(surf(lower,x));}
+    for(x=0;x<TW;x++){top.push(Math.min(surf(blobs,x),22*k));top2.push(surf(lower,x));}
     var lo=Math.min.apply(null,top);                     /* nothing may poke out of the tile and be cut flat */
     if(lo<1) for(x=0;x<TW;x++) top[x]+=1-lo;
     function render(P){
-      var c=canvas(TW,SH),g=c.getContext("2d");
+      var c=canvas(TW,SH),g=c.getContext("2d"),id=g.createImageData(TW,SH),
+          q=new Uint32Array(id.data.buffer),PP=P.map(pack);
       for(x=0;x<TW;x++){
         var s=Math.round(top[x]),sl=top[(x+1)%TW]-top[(x+TW-1)%TW];   /* <0 faces the sun (west) */
         var s2=Math.round(top2[x]),sl2=top2[(x+1)%TW]-top2[(x+TW-1)%TW];
         for(y=Math.max(0,s);y<SH;y++){
           var d=y-s,d2=y-s2,t;
-          if(d<1) t=sl>.8?3:4;                              /* sunlit rim, a step down on the lee side */
-          else if(d<2&&sl<-.8) t=4;
+          if(d<rim) t=sl>.8?3:4;                            /* sunlit rim, a step down on the lee side */
+          else if(d<rim+1&&sl<-.8) t=4;
           else{
-            var v=1-d/16-(top[x]-8)/30+(sl<0?.12:sl>.8?-.15:0);
+            var v=1-d/(16*k)-(top[x]-8*k)/(30*k)+(sl<0?.12:sl>.8?-.15:0);
             t=1+clamp(Math.floor(clamp(v,0,1)*2.4),0,2);
-            if(d>5&&d2>=-2&&d2<0) t=sl2<0?0:1;              /* cool shadow in the crevice, lee side */
-            else if(d>5&&d2>=0) t=d2<2?(sl2>.8?2:3):d2<7?2:1; /* lower billow: lit top, then body */
+            if(d>5*k&&d2>=-Math.max(1,Math.round(2*k))&&d2<0) t=sl2<0?0:1;   /* cool shadow in the crevice, lee side */
+            else if(d>5*k&&d2>=0) t=d2<rim?(sl2>.8?2:3):d2<7*k?2:1;          /* lower billow: lit top, then body */
           }
-          g.fillStyle=css(P[t]);g.fillRect(x,y,1,1);
+          q[y*TW+x]=PP[t];
         }
       }
+      g.putImageData(id,0,0);
       return c;
     }
     return {w:TW,h:SH,day:render(pal),night:render(pal2)};
@@ -1092,9 +1096,14 @@
     for(i=0;i<Math.max(3,Math.round(W/110));i++){
       clouds.push({s:4+(i%4),x:r()*(W+120),alt:180+r()*90,d:1.15+.2*r(),v:6+3*r(),front:true,o:1});
     }
-    sea={back:seaTile(192,64,5,SEA_DAY.map(function(c){return mix(c,hex("#9D8FBC"),.3);}),
-                    SEA_NIGHT.map(function(c){return mix(c,hex("#1E2350"),.3);})),
-         front:seaTile(224,70,9,SEA_DAY,SEA_NIGHT)};
+    /* three rows in perspective: small flat lumps hazing into the horizon, the
+       row the craft rides on, and fat cauliflowers close under you. Each tile is
+       wider than the frame so no silhouette shows twice */
+    var HW=[.5,.45,.3,.18,.12];
+    sea={back:seaTile(W+53,5,SEA_DAY.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]);}),
+                     SEA_NIGHT.map(function(c,i){return mix(c,hex("#2A3066"),HW[i]);}),.55,.45,1,true),
+         front:seaTile(Math.max(224,W+97),9,SEA_DAY,SEA_NIGHT,1,1,2),
+         near:seaTile(W+151,13,SEA_DAY,SEA_NIGHT,1.8,1,3)};
     land=makeLand();
     birds=[];
     for(i=0;i<5;i++) birds.push({dx:i*7+(i%2)*3,dy:(i%2)*3+Math.abs(i-2)*2,ph:i*.7});
@@ -1288,9 +1297,11 @@
     }
     return SEAK[SEAK.length-1][1]*H;
   }
-  function drawSea(tile,t,y,speed,n,alpha,ph){
+  /* one swell for the whole deck, so the rows breathe together */
+  function deckP(t){return t+2.6*Math.sin(t*.051)+.9*Math.sin(t*.137+1.3);}
+  function drawSea(tile,t,y,speed,n,alpha){
     if(alpha<=0||y>=H) return;
-    var p=t*speed+speed*2.4*Math.sin(t*.085+(ph||0));       /* speed swells by about a fifth */
+    var p=speed*deckP(t);
     var off=Math.round((p%tile.w+tile.w)%tile.w);
     ctx.globalAlpha=alpha;
     for(var x=-off;x<W;x+=tile.w){
@@ -1337,17 +1348,19 @@
     }
   }
 
-  /* hand the scene to the page: dither down into the content's ground */
+  /* hand the scene to the page: dither down through a cool dusk into the
+     content's ground, so cream rims never buzz straight against the dark */
   function drawFade(){
-    var NB=hex("#16121F"),FH=12,y,x;
+    var NB=hex("#16121F"),cw=smooth(105,150,camY),MD=mix(NB,hex("#2E2850"),cw),   /* the city keeps its plain fade */
+        FH=cw?14:12,L=cw?3:2,y,x;
     var id=ctx.getImageData(0,H-FH,W,FH),d=id.data;
     for(y=0;y<FH;y++){
-      var k=2*Math.pow((y+1)/FH,1.4);
+      var k=L*Math.pow((y+1)/FH,cw?1.3:1.4);
       for(x=0;x<W;x++){
-        var b=bay(x,y),lv=k>1+b?1:k>b?.55:0;
+        var b=bay(x,y),lv=k>2+b?3:k>1+b?2:k>b?1:0;
         if(!lv) continue;
-        var i=(y*W+x)*4;
-        d[i]+=(NB[0]-d[i])*lv;d[i+1]+=(NB[1]-d[i+1])*lv;d[i+2]+=(NB[2]-d[i+2])*lv;
+        var i=(y*W+x)*4,T=lv>=L?NB:MD,a=lv>1?1:cw?.5:.55;
+        d[i]+=(T[0]-d[i])*a;d[i+1]+=(T[1]-d[i+1])*a;d[i+2]+=(T[2]-d[i+2])*a;
       }
     }
     ctx.putImageData(id,0,H-FH);
@@ -1360,10 +1373,10 @@
     drawClouds(t,false,n);
     drawLand(t);
     var sy=seaY(camY),sa=smooth(50,140,camY);
-    drawSea(sea.back,t,sy-9,1.2,n,sa,0);
+    drawSea(sea.back,t,sy-7,.9,n,sa);
     drawCraft(t);
-    drawSea(sea.front,t,sy,3,n,sa,2.1);
-    drawSea(sea.front,t+41,sy+40,4.6,n,sa,4.4);
+    drawSea(sea.front,t,sy,3,n,sa);
+    drawSea(sea.near,t,sy+20,9,n,sa);   /* tops overlap the front row and hide its skirt */
     drawClouds(t,true,n);
     drawFade();
   }
