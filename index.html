@@ -722,10 +722,12 @@
   /* the cloud deck: a tileable sea of billows, lit from the side by a sun
      sitting on the horizon. Crowns catch peach, troughs take the blue sky */
   var SEA_DAY=["#8A86BE","#A88AB2","#E2AEAC","#FFD3B4","#FFEDD6"].map(hex),
-      SEA_NIGHT=["#1A1F46","#262B58","#454D88","#7780BC","#BCC4EE"].map(hex);
+      SEA_ROSE=["#6E6A9E","#8C6C92","#CF8796","#F2A0A2","#FFC2B2"].map(hex),   /* afterglow: gold, then rose, then blue */
+      SEA_NIGHT=["#1A1F46","#262B58","#454D88","#7780BC","#BCC4EE"].map(hex),
+      GILD=[0,0,0,hex("#FFCDA0"),hex("#FFE6A8")];          /* only the rims, gilded close to the sun */
   /* k scales every feature (rows nearer the eye are bigger), vy squashes the
      domes (rows near the horizon are seen edge-on), rim is the sunlit lip */
-  function seaTile(TW,seed,pal,pal2,k,vy,rim,far){
+  function seaTile(TW,seed,pals,k,vy,rim,far){
     var r=rng(seed),blobs=[],lower=[],i,x,y,SH=Math.round(70*k);
     /* by dusk the convection is dying: mostly low rolling heads, a few
        vigorous cauliflowers still crusted with bubbles */
@@ -825,7 +827,7 @@
     paint(G,top,0,TW,tS0,sh0);
     function render(P){
       var c=canvas(TW,SH),g=c.getContext("2d"),id=g.createImageData(TW,SH),
-          q=new Uint32Array(id.data.buffer),PP=P.map(pack);
+          q=new Uint32Array(id.data.buffer),PP=P.map(function(c){return c?pack(c):0;});
       for(i=0;i<TW*SH;i++) if(G[i]!==255) q[i]=PP[G[i]];
       g.putImageData(id,0,0);
       return c;
@@ -866,17 +868,17 @@
         if(x1>=0){sw+=x1-x0+1;sH=Math.max(sH,y1-y0+1);}
       }
       /* every frame of a life side by side on one sheet per palette */
-      [[pal,"day"],[pal2,"night"]].forEach(function(pp){
+      o.lay=pals.concat([GILD]).map(function(P){
         var c=canvas(Math.max(1,sw),Math.max(1,sH)),g=c.getContext("2d"),id=g.createImageData(c.width,c.height),
-            q=new Uint32Array(id.data.buffer),PP=pp[0].map(pack);
+            q=new Uint32Array(id.data.buffer),PP=P.map(function(c){return c?pack(c):0;});
         o.fr.forEach(function(f){if(f) for(y=0;y<f.h;y++) for(x=0;x<f.w;x++){
           var j=(y+f.y)*TW+x+f.x,v=f.G[j];if(v!==G[j]&&v!==255) q[y*c.width+f.sx+x]=PP[v];}});
-        g.putImageData(id,0,0);o[pp[1]]=c;
+        g.putImageData(id,0,0);return c;
       });
       o.fr.forEach(function(f){if(f) delete f.G;});
     });
     }
-    return {w:TW,h:SH,up:up,day:render(pal),night:render(pal2),slots:slots,breathe:breathe};
+    return {w:TW,h:SH,up:up,lay:pals.concat([GILD]).map(render),slots:slots,breathe:breathe};
   }
 
   /* the deck from underneath: a dark, nearly flat ceiling of soft rolls, only
@@ -1234,11 +1236,11 @@
     /* three rows in perspective: small flat lumps hazing into the horizon, the
        row the craft rides on, and fat cauliflowers close under you. Each tile is
        wider than the frame so no silhouette shows twice */
-    var HW=[.5,.45,.3,.18,.12];
-    sea={back:seaTile(W+53,5,SEA_DAY.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]);}),
-                     SEA_NIGHT.map(function(c,i){return mix(c,hex("#2A3066"),HW[i]);}),.55,.45,1,true),
-         front:seaTile(Math.max(224,W+97),9,SEA_DAY,SEA_NIGHT,1,1,2),
-         near:seaTile(W+151,13,SEA_DAY,SEA_NIGHT,1.8,1,3),
+    var HW=[.5,.45,.3,.18,.12],P3=[SEA_DAY,SEA_ROSE,SEA_NIGHT];
+    sea={back:seaTile(W+53,5,[[SEA_DAY,"#D6A8A4"],[SEA_ROSE,"#B98A9E"],[SEA_NIGHT,"#2A3066"]].map(function(h){
+                       return h[0].map(function(c,i){return mix(c,hex(h[1]),HW[i]);});}),.55,.45,1,true),
+         front:seaTile(Math.max(224,W+97),9,P3,1,1,2),
+         near:seaTile(W+151,13,P3,1.8,1,3),
          bback:baseTile(W+41,17,SEA_BASE.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]*.6);}),.55),
          bfront:baseTile(W+89,19,SEA_BASE,1),
          bnear:baseTile(W+137,23,SEA_BASE,1.8)};
@@ -1444,24 +1446,35 @@
   function deckP(t){return t+2.6*Math.sin(t*.051)+.9*Math.sin(t*.137+1.3);}
   function drawSea(tile,t,y,speed,n,alpha){
     if(alpha<=0||y>=H) return;
-    var p=speed*deckP(t);
-    var off=Math.round((p%tile.w+tile.w)%tile.w);
-    ctx.globalAlpha=alpha;
+    var p=speed*deckP(t),Y=Math.round(y),
+        off=Math.round((p%tile.w+tile.w)%tile.w),
+        A=[1,smooth(.02,.2,n),smooth(.2,.9,n)],gf=.7*(1-A[1]),gb=[],NB=8,gs=clamp(W*.45,60,150)/NB,b;
+    /* rims near the sun take gold, in wide flat steps out from under it */
+    if(gf>.02) for(b=0;b<NB;b++) [-1,1].forEach(function(sd){
+      var a=Math.round(SUN.x+sd*b*gs),c=Math.round(SUN.x+sd*(b+1)*gs);
+      gb.push([Math.min(a,c),Math.max(a,c),gf*(1-b/NB)]);});
+    function lay(L,sx,sy,w,h,X,Y){                      /* day, its gilt, the afterglow, then night */
+      for(var j=0;j<3;j++){
+        if(A[j]<=.02) continue;
+        ctx.globalAlpha=alpha*A[j];ctx.drawImage(L[j],sx,sy,w,h,X,Y,w,h);
+        if(!j) gb.forEach(function(g){var a=Math.max(g[0],X),c=Math.min(g[1],X+w);
+          if(c>a){ctx.globalAlpha=alpha*g[2];ctx.drawImage(L[3],sx+a-X,sy,c-a,h,a,Y,c-a,h);}});
+      }
+      ctx.globalAlpha=alpha;
+    }
     var live=(tile.slots||[]).map(function(o){                 /* which turrets are boiling, and how far along */
-      var u=((t/o.per+o.ph)%1)/.7,f=u<1&&1-n>o.q+.1&&o.fr[Math.floor(u*o.fr.length)];
+      var u=((t/o.per+o.ph)%1)/.7,f=u<1&&1-n>o.q+.1&&o.lay&&o.fr[Math.floor(u*o.fr.length)];
       return f?[o,f]:null;
     });
     for(var x=-off;x<W;x+=tile.w){
-      ctx.drawImage(tile.day,x,Math.round(y));
-      if(n>.02){ctx.globalAlpha=alpha*n;ctx.drawImage(tile.night,x,Math.round(y));ctx.globalAlpha=alpha;}
+      lay(tile.lay,0,0,tile.w,tile.h,x,Y);
       live.forEach(function(L){if(!L) return;                       /* opaque day first, so no ghost of the old tops */
-        var o=L[0],f=L[1],X=x+f.x,Y=Math.round(y)+f.y;
-        ctx.drawImage(o.day,f.sx,0,f.w,f.h,X,Y,f.w,f.h);
-        if(n>.02){ctx.globalAlpha=alpha*n;ctx.drawImage(o.night,f.sx,0,f.w,f.h,X,Y,f.w,f.h);ctx.globalAlpha=alpha;}});
+        var o=L[0],f=L[1];lay(o.lay,f.sx,0,f.w,f.h,x+f.x,Y+f.y);});
     }
-    var below=Math.round(y)+tile.h;
+    var below=Y+tile.h;
     if(below<H){
-      var deep=mix(mix(SEA_DAY[1],SEA_DAY[0],.5),mix(SEA_NIGHT[1],SEA_NIGHT[0],.5),n);
+      var dp=function(P){return mix(P[1],P[0],.5);},
+          deep=mix(mix(dp(SEA_DAY),dp(SEA_ROSE),A[1]),dp(SEA_NIGHT),A[2]);
       ctx.fillStyle=css(deep);ctx.fillRect(0,below,W,H-below);
     }
     ctx.globalAlpha=1;
