@@ -104,10 +104,11 @@
   .alt{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto}
 
   .caption{margin:0;font-family:var(--mincho);font-size:17px;line-height:1.45;color:#EDEAF6;
-    text-shadow:2px 2px 0 rgba(8,8,24,.5);max-width:30ch;opacity:0;transition:opacity .2s ease;
+    text-shadow:2px 2px 0 rgba(8,8,24,.5);max-width:100%;opacity:0;transition:opacity .2s ease;
     /* a night-sky plaque in the buttons' family, so the verse reads over the aurora */
     padding:11px 16px 12px;background:rgba(18,15,38,.66);clip-path:var(--notch);
     box-shadow:inset 0 3px 0 rgba(255,255,255,.06),inset 0 -3px 0 rgba(0,0,0,.3)}
+  .caption .line{white-space:nowrap;font-size:min(17px,calc((100vw - 82px)/18))}   /* one line, shrunk to fit small phones */
   .caption .src{display:block;margin-top:6px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#CDD2EC}
   .caption{margin-bottom:44px}
   .caption:empty{display:none}
@@ -1734,17 +1735,26 @@
     ["Moonlight guide you","Melinoë, Hades II"],
     ["To infinity, and beyond!","Buzz Lightyear, Toy Story"]
   ];
-  var summit=null,lastVerse=-1;
+  /* a shuffle bag: every line once before any repeats, kept across visits */
+  var summit=null,BAG_KEY="verse-bag";
   function pickVerse(){
-    var i;
-    do{i=Math.floor(Math.random()*VERSE.length);}while(VERSE.length>1&&i===lastVerse);
-    lastVerse=i;return VERSE[i];
+    var bag=[],last=-1;
+    try{var st=JSON.parse(localStorage.getItem(BAG_KEY));bag=st.bag.filter(function(i){return i<VERSE.length;});last=st.last;}catch(e){}
+    if(!bag.length){
+      for(var i=0;i<VERSE.length;i++) bag.push(i);
+      for(var j=bag.length-1;j>0;j--){var k=Math.floor(Math.random()*(j+1)),t=bag[j];bag[j]=bag[k];bag[k]=t;}
+      if(bag.length>1&&bag[0]===last){t=bag[0];bag[0]=bag[1];bag[1]=t;}   /* no repeat across bags either */
+    }
+    var n=bag.shift();
+    try{localStorage.setItem(BAG_KEY,JSON.stringify({bag:bag,last:n}));}catch(e){}
+    return VERSE[n];
   }
   /* the same line in either language: a citation, not a translation */
   function caption(){
     cap.textContent="";
     if(!summit) return;
-    cap.appendChild(document.createTextNode(summit[0]));
+    var l=document.createElement("span");l.className="line";l.textContent=summit[0];
+    cap.appendChild(l);
     var s=document.createElement("span");s.className="src";s.textContent=summit[1];
     cap.appendChild(s);
     scheduleLayout();                                        /* the verse can push the controls up */
