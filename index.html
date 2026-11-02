@@ -655,12 +655,13 @@
 
     /* chimney smoke: buoyant at first, then carried back at the front row's pace */
     var smoke=n>.5?mix(hex("#D9D2E6"),hex("#7A78A6"),n):mix(hex("#F2E3DA"),hex("#D9D2E6"),n*2);
-    ctx.fillStyle=css(smoke);
-    for(var i=0;i<7;i++){
-      var age=((t+i*.62)%4.3),a=.6*(1-age/4.3);
-      var sx=ox+HX+6.5-age*3+Math.sin(age*2.2+i)*.8,sy=yb+HY-7-age*(6.4-.55*age);
-      var sz=age<1.1?1:2;
-      ctx.globalAlpha=a;ctx.fillRect(Math.round(sx),Math.round(sy),sz,sz);
+    var SMK=[mix(hex("#8C7E90"),hex("#4A4466"),n),0,smoke];SMK[1]=mix(SMK[0],smoke,.5);   /* sooty at the cap, paling as it spreads */
+    for(var i=0;i<10;i++){
+      var age=((t+i*.43)%4.3),X=Math.round(ox+HX+6.5-age*3+Math.sin(age*2.2+i)*.8),Y=Math.round(yb+HY-6-age*(6.4-.55*age));
+      ctx.fillStyle=css(SMK[age<.8?0:age<2?1:2]);ctx.globalAlpha=age<1.2?.9:age<2.6?.65:.4;
+      if(age<.6) ctx.fillRect(X,Y,1,1);
+      else if(age<2.4) ctx.fillRect(X,Y,2,2);
+      else{ctx.fillRect(X,Y-1,1,3);ctx.fillRect(X-1,Y,3,1);}
     }
     ctx.globalAlpha=1;
   }
@@ -743,7 +744,7 @@
   /* the cloud deck: a tileable sea of billows, lit from the side by a sun
      sitting on the horizon. Crowns catch peach, troughs take the blue sky */
   var SEA_DAY=["#8A86BE","#A88AB2","#E2AEAC","#FFD3B4","#FFEDD6"].map(hex),
-      SEA_ROSE=["#6E6A9E","#8C6C92","#CF8796","#F2A0A2","#FFC2B2"].map(hex),   /* afterglow: gold, then rose, then blue */
+      SEA_ROSE=["#625E90","#7D6085","#CF8796","#F2A0A2","#FFC2B2"].map(hex),   /* afterglow: gold, then rose, then blue */
       SEA_NIGHT=["#1A1F46","#262B58","#454D88","#7780BC","#BCC4EE"].map(hex),
       GILD=[0,0,0,hex("#FFCDA0"),hex("#FFE6A8")];          /* only the rims, gilded close to the sun */
   /* k scales every feature (rows nearer the eye are bigger), vy squashes the
@@ -812,7 +813,8 @@
     function sl(a,x){return a[(x+1)%TW]-a[(x+TW-1)%TW];}  /* <0 faces the sun (west) */
     function lit(e,l,d,hi){return e>=1.5?(d<rim?1:0):e>0?hi-1:l>.8?2:hi;}
     function band(e){return e<1.5?0:e<3?1:2;}
-    var SL=.25,t2S=box(top2),sh2=shade(top2),G=new Uint8Array(TW*SH).fill(255),cr=Math.round(3*k);
+    var SL=.25,t2S=box(top2),sh2=shade(top2),G=new Uint8Array(TW*SH).fill(255),cr=Math.round(3*k),
+        VG=18*Math.min(k,1.4);                             /* big heads close by: a lit cap over a shaded skirt */
     /* tone columns xa..xb of grid G for a given upper profile */
     function paint(G,top,xa,xb,tS,sh){
     for(x=xa;x<xb;x++){
@@ -825,7 +827,7 @@
         if(d<rim+band(e)) t=lit(e,l,d,4);                 /* sunlit rim; dull on the lee, shade under the rays */
         else if(d<rim+1&&l<-.8&&!e) t=4;
         else{
-          var v=1.1-ds/(18*k)-(tS[x]-10*k)/(30*k)+lS-Math.min(e,4)*.07;
+          var v=1.1-ds/VG-(tS[x]-10*k)/(30*k)+lS-Math.min(e,4)*.07;
           t=1+clamp(Math.floor(clamp(v,0,1)*2.4),0,2);
           if(ds>5*k&&d2>=0)                               /* lower billow: lit top, then body */
             t=d2<rim+band(e2)?lit(e2,l2,d2,3):y-t2S[x]<9*k-Math.min(e2,4)*k?2:1;
@@ -842,6 +844,15 @@
       if(a===b&&a!==c&&a!==255){G[y*TW+x]=a;continue;}
       if(pass>1&&a!==c&&b!==c&&a!==255&&b!==255){G[y*TW+x]=a;continue;}   /* a 1px sliver takes the sun side */
       if(pass<3&&y>0&&y<SH-1){a=G[(y-1)*TW+x];b=G[(y+1)*TW+x];if(a===b&&a!==c&&a!==255)G[y*TW+x]=a;}
+    }
+    /* no chips or slits of skylight blue: a run under 3px takes the tone above it */
+    for(y=1;y<SH;y++) for(x=xa;x<xb;x++){
+      var j=y*TW+x,u=G[j-TW];
+      if(G[j]!==0||u===0||u===255) continue;
+      var w=1,m;
+      for(m=1;m<3&&G[y*TW+(x+m)%TW]===0;m++) w++;
+      for(m=1;m<3&&G[y*TW+(x-m+TW)%TW]===0;m++) w++;
+      if(w<3) G[j]=u;
     }
     }
     var tS0=box(top),sh0=shade(top);
@@ -877,7 +888,8 @@
             tr=o.R*(.8+.5*u),rb=2.2*tr,G2=G.slice();
         T=raw.slice();
         dome(o.cx+o.sx*tr,o.sc+tr,rb,(.45*h+tr)/rb);       /* a broad shoulder heaving up the sheet */
-        dome(o.cx,o.sc+.2*tr,tr,(h+.2*tr)/tr);              /* and the head boiling out of it */
+        var hr=Math.max(tr,.8*h);                           /* broad, never a pillar */
+        dome(o.cx,o.sc+.2*hr,hr,(h+.2*hr)/hr);              /* and the head boiling out of it */
         if(u>.12&&u<.75) o.cb.forEach(function(c){var bx=o.cx+c[0]*tr,br=c[1]*h/o.Hm;   /* crust while it boils */
           if(br>1) dome(bx,Math.max(1+br,T[Math.round(bx)]+br*.6),br,1);});
         var Tc=close(T),tS=box(Tc),sh=shade(Tc),ca=xb,cb=xa,x0=1e9,x1=-1,y0=1e9,y1=-1;
@@ -906,12 +918,15 @@
      their lower lips catching the low sun. Nothing hangs: that would be mammatus.
      The rolls grow tier by tier up the tile, toward the ceiling overhead */
   var SEA_BASE=SEA_DAY.map(function(c,i){return mix(c,hex("#4A3E6A"),[.55,.5,.3,.2,.2][i]);});
-  function baseTile(TW,seed,pal,k){
-    var r=rng(seed),SH=Math.round(34*k),G=new Uint8Array(TW*SH),rolls=[],i,x,y,j,PP=pal.map(pack);
-    [[0,6],[5,9],[12,13],[22,18]].forEach(function(T,ti){     /* lip height, roll size */
+  function baseTile(TW,seed,pal,k,dp){
+    var r=rng(seed),SH=Math.round(40*k),G=new Uint8Array(TW*SH).fill(255),Lt=new Uint8Array(TW*SH).fill(255),
+        rolls=[],i,x,y,j,PP=pal.map(pack),
+        wm=Math.max(1,Math.round(TW/(60*k))),wp=r()*6.28;     /* a slow swell along the lowest edge */
+    [[0,6],[6,9],[13,13],[23,18]].forEach(function(T,ti){     /* lip height, roll size */
       var n=Math.round(TW/(T[1]*1.5*k));
-      for(i=0;i<n;i++){var rx=T[1]*k*(.8+.4*r()),ry=rx*.3;
-        rolls.push([(i+r()*.6)*TW/n,SH-1-(T[0]+(ti?r()*3-1.5:r()*3))*k-ry,rx,ry,ti>1&&k>1.4?2:1]);}   /* a ragged lowest tier */
+      for(i=0;i<n;i++){var rx=T[1]*k*(.6+.8*r()),ry=rx*.3,cx=(i+r()*.6)*TW/n,
+          lh=ti?T[0]+r()*3-1.5:2.5+2.5*Math.sin(cx/TW*6.28*wm+wp)+r()*2-(r()<.33?2+r()*2:0);   /* the lowest tier ragged, now and then hanging low */
+        rolls.push([cx,SH-1-(Math.max(0,lh)+1)*k-ry,rx,ry,ti>1&&k>1.4?2:1,Math.min(3,ti+dp)]);}   /* rows overhead count as higher tiers */
     });
     rolls.forEach(function(b){                             /* far tiers first, nearer ones overlap them */
       for(j=-1;j<=1;j++) for(x=Math.floor(b[0]+j*TW-b[2]);x<=b[0]+j*TW+b[2];x++){
@@ -919,25 +934,25 @@
         var dx=(x+.5-b[0]-j*TW)/b[2];if(Math.abs(dx)>=1) continue;
         var h=Math.sqrt(1-dx*dx),e=Math.min(SH-1,Math.round(b[1]+b[3]*h));
         for(y=Math.max(0,Math.round(b[1]-b[3]*h));y<=e;y++){
-          var du=e-y,f=du/(b[3]*2+1);
-          G[y*TW+x]=du<b[4]?(dx<-.2?3:2):f<.42?1:0;          /* lip lit from below, the rest in shade */
+          var du=e-y,f=du/(b[3]*2+1),sun=dx<-.2,lip=du<b[4];
+          /* lips are a contour overhead; only the lowest, far tiers catch the sun from under */
+          G[y*TW+x]=lip?(b[5]?1:2):f<.42?1:0;
+          Lt[y*TW+x]=lip?[sun?4:3,sun?3:2,sun?2:255,255][b[5]]:255;
         }
       }
     });
-    var c=canvas(TW,SH),g=c.getContext("2d"),id=g.createImageData(TW,SH),q=new Uint32Array(id.data.buffer);
-    for(i=0;i<TW*SH;i++) q[i]=PP[G[i]];
-    g.putImageData(id,0,0);
-    return {w:TW,h:SH,day:c,top:pal[0]};
+    for(x=0;x<TW;x++){                                    /* solid cloud above the lowest lip */
+      for(y=SH-1;y>=0&&G[y*TW+x]===255;y--);
+      for(;y>=0;y--) if(G[y*TW+x]===255) G[y*TW+x]=0;
+    }
+    function img(A){var c=canvas(TW,SH),g=c.getContext("2d"),id=g.createImageData(TW,SH),q=new Uint32Array(id.data.buffer);
+      for(i=0;i<TW*SH;i++) if(A[i]!==255) q[i]=PP[A[i]];
+      g.putImageData(id,0,0);return c;}
+    return {w:TW,h:SH,day:img(G),lit:img(Lt),top:pal[0]};
   }
-  /* inside the cloud: a few dither densities of the same white, built once */
-  var WHITE=[];
-  function whiteouts(){
-    WHITE=[3,6,10,13,16].map(function(m){
-      var c=canvas(4,4),g=c.getContext("2d");g.fillStyle="#E6CFD2";
-      for(var i=0;i<16;i++) if(BAY[i]<m) g.fillRect(i&3,i>>2,1,1);
-      return ctx.createPattern(c,"repeat");
-    });
-  }
+  /* inside the cloud: flat steps of one fog, dim grey-violet under the base,
+     bright and warm just under the sunlit tops */
+  var FOG=[.2,.4,.6,.8,1],FOGIN=hex("#A898B8"),FOGOUT=hex("#F2DCD6");
 
   /* ================================================================ LAND */
   /* Edinburgh looking north from Blackford Hill on a summer evening: the sun
@@ -1213,7 +1228,7 @@
     /* the ladder stays above the controls and the verse */
     craftY=Math.min(craftY,H-CH-8,Math.floor((fr.top-hr.top)/S)-CH-2);
     /* parked at the deck, the cloud tops settle just under the basket, wherever the craft hangs */
-    SEAK[2][1]=clamp((craftY+CH-8)/H,.66,.8);
+    SEAK[2][1]=clamp((craftY+CH-8)/H,.52,.8);
 
     /* landmarks sit left of the controls (measured from their right edge, so the
        button labels' language can't move them), but never push the castle off */
@@ -1262,11 +1277,10 @@
                        return h[0].map(function(c,i){return mix(c,hex(h[1]),HW[i]);});}),.55,.45,1,true),
          front:seaTile(Math.max(224,W+97),9,P3,1,1,2),
          near:seaTile(W+151,13,P3,1.8,1,3),
-         bback:baseTile(W+41,17,SEA_BASE.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]*.6);}),.55),
-         bfront:baseTile(W+89,19,SEA_BASE,1),
-         bnear:baseTile(W+137,23,SEA_BASE,1.8)};
+         bback:baseTile(W+41,17,SEA_BASE.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]*.6);}),.55,0),
+         bfront:baseTile(W+89,19,SEA_BASE,1,1),
+         bnear:baseTile(W+137,23,SEA_BASE,1.8,2)};
     [sea.front,sea.near].forEach(function(s,i){setTimeout(s.breathe,150+i*90);});
-    if(!WHITE.length) whiteouts();
     land=makeLand();
     birds=[];
     for(i=0;i<5;i++) birds.push({dx:i*7+(i%2)*3,dy:(i%2)*3+Math.abs(i-2)*2,ph:i*.7});
@@ -1277,8 +1291,10 @@
   function nowT(){return RM?12:performance.now()/1000;}
 
   var EARTHSH=hex("#8C8DB8"),BELT=hex("#EBA8B8"),EAST=[],HZ=[];
-  var GLOW=["#FFC47A","#FFAE78","#F79A88","#DE90A6","#B08DBA"].map(hex),GLOWP=GLOW.map(pack),
-      GLOWB=GLOW.map(function(c,i){return mix(c,BELT,[0,0,.25,.4,.35][i]);}),GLOWBP=GLOWB.map(pack);
+  var GLOW=["#FFC47A","#FFAE78","#F79A88","#DE90A6","#B08DBA"].map(hex),
+      GLOWB=GLOW.map(function(c,i){return mix(c,BELT,[0,0,.25,.4,.35][i]);}),
+      GLOWM=[0,1,2,3].map(function(j){return GLOW.map(function(c,i){return mix(c,GLOWB[i],j/3);});}),   /* sun side to belt in small steps */
+      GLOWMP=GLOWM.map(function(P){return P.map(pack);});
   function drawSky(t){
     if(EAST.length!==W){EAST=[];HZ=[];for(var ex=0;ex<W;ex++){EAST.push(smooth(SUN.x+60,W*1.05,ex));
       HZ.push(.35+.65*Math.pow(1-clamp(Math.abs(ex-SUN.x)/(W*.95),0,1),1.3));}}   /* twilight arch over the sun */
@@ -1307,18 +1323,20 @@
        clean twilight ramp, gold under the sun, rose toward the east, stepped
        only between neighbours so orange never lands on lavender as grey */
     var DK=seaY(camY)-4-7*Math.max(0,deckG(camY)-1),gk=camY<120?0:smooth(95,150,camY)*(1-smooth(230,380,camY)),   /* none under the deck */
-        dusk=smooth(150,300,camY);
+        dusk=smooth(150,300,camY),hm=Math.min(42,.75*(H-DK)+10);   /* never taller than the deck under it */
     if(gk>0){
-      for(y=Math.max(0,Math.round(DK-56));y<Math.min(H,DK+30);y++){   /* runs on under the deck, behind any dips */
+      for(y=Math.max(0,Math.round(DK-84));y<Math.min(H,DK+30);y++){   /* runs on under the deck, behind any dips */
         var upx=Math.max(0,DK-y),row2=y*W;
         for(x=0;x<W;x++){
-          var hz=HZ[x],hh=42*(.6+.4*hz)*gk,u=upx/hh,
-              p0=1-gk*(1-.5*(1-hz)/.65)*(1-.45*dusk),q=(p0+(1-p0)*u)*6;   /* dusk: gold goes first */
-          if(q>=6) continue;
+          var hz=HZ[x],hh=hm*(.6+.4*hz)*gk,u=Math.pow(upx/hh,.8),   /* gold stays a thin line, the rose gets the room */
+              p0=1-gk*(1-.5*(1-hz)/.65)*(1-.7*dusk),q=(p0+(1-p0)*u)*6;   /* dusk: gold goes first, then the rose cools */
+          if(q>=7) continue;
           var qi=Math.floor(q);qi+=smooth(.3,.7,q-qi)>bay(x,y)?1:0;
-          var bv2=smooth(.42,.58,gk*EAST[x])>bay(x,y);   /* Belt of Venus: pinker opposite the sun */
-          if(qi<5) u32[row2+x]=(bv2?GLOWBP:GLOWP)[qi];
-          else blend(x,y,bv2?GLOWB[4]:GLOW[4],.5);
+          if(qi>6) continue;                                /* the last step dithers out into the sky */
+          var jf=3*smooth(.15,.85,gk*EAST[x]),j=Math.floor(jf);   /* Belt of Venus: pinker opposite the sun */
+          j+=smooth(.3,.7,jf-j)>bay(x+2,y+1)?1:0;
+          if(qi<5) u32[row2+x]=GLOWMP[j][qi];
+          else blend(x,y,GLOWM[j][4],qi<6?.5:.22);
         }
       }
     }
@@ -1338,7 +1356,7 @@
       for(y=-34;y<=34;y++) for(x=-34;x<=34;x++){
         var dd=Math.sqrt(x*x+y*y),ds=Math.sqrt(x*x+y*y*sq*sq);
         if(ds<=6.3){blend(SUN.x+x,sy+y,ds<4.6?SC:SE,1);continue;}
-        var al=dd<11?.3:dd<18?.17:dd<26?.09:dd<34?(((x+y)&1)?0:.07):0;
+        var al=dd<11?.3:dd<18?.17:dd<26?.09:dd<34&&!sk?(((x+y)&1)?0:.07):0;   /* no mesh over the ramp */
         if(al) blend(SUN.x+x,sy+y,SG,al);
       }
     }
@@ -1350,6 +1368,7 @@
       if(syy<0||syy>=H) continue;
       var vis=smooth(120,250,st.a)*st.b*(RM?.85:(.62+.38*Math.sin(t*st.sp+st.ph)));
       vis*=1-.9*dk*(st.big&&st.b>.8?.6:1);   /* sun up at the deck: only a planet or two */
+      if(gk>0) vis*=1-gk*smooth(-6,0,syy-(DK-hm*(.6+.4*HZ[st.x])*gk));   /* and none in the bright band */
       if(vis<.04) continue;
       blend(st.x,syy,STAR,vis);
       if(st.big){
@@ -1442,7 +1461,7 @@
       var al=1;
       if(front){
         var dmin=1e9;BANDS.forEach(function(b){dmin=Math.min(dmin,Math.abs(camY-b.cam));});
-        al=smooth(6,40,dmin)*(1-smooth(120,150,camY));if(al<=0) continue;                                        /* thin out where it would sit on the balloon */
+        al=camY<120?smooth(6,40,dmin):0;if(al<=0) continue;   /* gone in the fog, not ghosted over the tops */                                        /* thin out where it would sit on the balloon */
         var dx=Math.abs(x+sp.w/2-craftX-CW/2)/((sp.w+CW)/2),dy=Math.abs(y+sp.h/2-craftY-CH/2)/((sp.h+CH)/2);
         al*=1-.8*(1-smooth(.55,1,dx))*(1-smooth(.55,1,dy));
       }
@@ -1462,7 +1481,7 @@
     return SEAK[SEAK.length-1][1]*H;
   }
   /* how far the rows stand apart: one line at eye level, fanning out as you climb */
-  function deckG(c){return clamp((c-128)/22,-.8,1)*(1+1.5*smooth(150,320,c));}
+  function deckG(c){return clamp((c-128)/22,-.8,1)*(1+.7*smooth(150,320,c));}
   /* one swell for the whole deck, so the rows breathe together */
   function deckP(t){return t+2.6*Math.sin(t*.051)+.9*Math.sin(t*.137+1.3);}
   function drawSea(tile,t,y,speed,n,alpha){
@@ -1503,8 +1522,15 @@
   /* seen from below: the rolls' lips at y, solid cloud above them */
   function drawBase(tile,t,y,speed){
     y=Math.round(y);if(y<=0) return;
-    var off=Math.round(((speed*deckP(t))%tile.w+tile.w)%tile.w),ty=y-tile.h;
-    for(var x=-off;x<W;x+=tile.w) ctx.drawImage(tile.day,x,ty);
+    var off=Math.round(((speed*deckP(t))%tile.w+tile.w)%tile.w),ty=y-tile.h,NB=6,gs=clamp(W*.6,80,220)/NB;
+    for(var x=-off;x<W;x+=tile.w){
+      ctx.drawImage(tile.day,x,ty);
+      for(var b=0;b<NB;b++){                              /* the lips glow rose toward the sun, cool to the east */
+        var a=Math.max(x,Math.round(SUN.x+(b?b*gs:-W))),c=Math.min(x+tile.w,Math.round(SUN.x+(b+1)*gs));
+        if(c>a){ctx.globalAlpha=1-b/NB;ctx.drawImage(tile.lit,a-x,0,c-a,tile.h,a,ty,c-a,tile.h);}
+      }
+      ctx.globalAlpha=1;
+    }
     if(ty>0){ctx.fillStyle=css(tile.top);ctx.fillRect(0,0,W,ty);}
   }
 
@@ -1542,16 +1568,20 @@
 
   /* hand the scene to the page: dither down through a cool dusk into the
      content's ground, so cream rims never buzz straight against the dark */
-  function drawFade(){
-    var NB=hex("#16121F"),cw=smooth(105,150,camY),MD=mix(NB,hex("#2E2850"),cw),   /* the city keeps its plain fade */
-        FH=cw?14:12,L=cw?3:2,y,x;
+  function drawFade(n){
+    var NB=hex("#16121F"),cw=smooth(105,150,camY),cf=cw>.5,MD=mix(NB,hex("#2E2850"),cw),   /* the city keeps its plain fade */
+        A1=smooth(.02,.2,n),A2=smooth(.2,.9,n),
+        D1=mix(mix(SEA_DAY[1],SEA_ROSE[1],A1),SEA_NIGHT[1],A2),   /* first a step down to the deck's own body tone */
+        FH=cf?15:12,L=cf?4:2,y,x;
     var id=ctx.getImageData(0,H-FH,W,FH),d=id.data;
     for(y=0;y<FH;y++){
-      var k=L*Math.pow((y+1)/FH,cw?1.3:1.4);
+      var k=L*Math.pow((y+1)/FH,cf?1.15:1.4);
       for(x=0;x<W;x++){
-        var b=bay(x,y),lv=k>2+b?3:k>1+b?2:k>b?1:0;
+        var b=bay(x,y),lv=k>3+b?4:k>2+b?3:k>1+b?2:k>b?1:0;
         if(!lv) continue;
-        var i=(y*W+x)*4,T=lv>=L?NB:MD,a=lv>1?1:cw?.5:.55;
+        var i=(y*W+x)*4,T,a;
+        if(cf){T=[0,D1,MD,MD,NB][lv];a=lv<3?.5:1;}
+        else{T=lv>=L?NB:MD;a=lv>1?1:.55;}
         d[i]+=(T[0]-d[i])*a;d[i+1]+=(T[1]-d[i+1])*a;d[i+2]+=(T[2]-d[i+2])*a;
       }
     }
@@ -1570,7 +1600,8 @@
     drawCraft(t);
     if(above){
       drawSea(sea.front,t,sy,3,n,1);
-      drawSea(sea.near,t,sy+20*g-sea.near.up,9,n,1);   /* tops overlap the front row and hide its skirt; turrets rise out of it */
+      var nd=Math.min(20,Math.round(.42*(H-15-SEAK[2][1]*H)));   /* lifted where the fade would eat it */
+      drawSea(sea.near,t,sy+nd*g-sea.near.up,9,n,1);   /* tops overlap the front row and hide its skirt; turrets rise out of it */
     }else if(camY>8){
       drawClouds(t,true,n);                               /* the near puffs go up into it too */
       var f=clamp((124-camY)/14,0,5),by=be;
@@ -1582,15 +1613,17 @@
     if(above||camY<=8) drawClouds(t,true,n);
     /* punching through: the fog thickens from the base down, and on the way
        out clears from the sky down to the tops */
-    var wd=Math.abs(camY-120),ws=8*(1-wd/15),wf=Math.min(1,wd/5)/10;   /* solid right through the middle */
+    var wd=Math.abs(camY-120),wr=1-wd/15,ws=8*wr,wf=Math.min(1,wd/5)/10*Math.min(1,3*wr);   /* solid right through the middle, no pop at the edges */
     if(ws>0){
       var y0=above?sy:be,l0=-1,ya=0;
+      ctx.fillStyle=css(mix(FOGIN,FOGOUT,smooth(114,138,camY)));   /* brightens only once the name is clear of it */
       for(y=0;y<=H;y++){
         var l=y<H?clamp(Math.round(ws+(above?y-y0:y0-y)*wf),0,5):-2;
-        if(l!==l0){if(l0>0){ctx.fillStyle=WHITE[l0-1];ctx.fillRect(0,ya,W,y-ya);}l0=l;ya=y;}
+        if(l!==l0){if(l0>0){ctx.globalAlpha=FOG[l0-1];ctx.fillRect(0,ya,W,y-ya);}l0=l;ya=y;}
       }
+      ctx.globalAlpha=1;
     }
-    drawFade();
+    drawFade(n);
   }
 
   /* ============================================================== LOOP */
