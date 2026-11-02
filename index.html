@@ -1049,16 +1049,22 @@
     while(x<W+6){
       var bw=5+Math.floor(r()*8),rel=x-AX;
       var bh=8+Math.floor(r()*7)+(rel>-56&&rel<14?6:0)+(rel>-26&&rel<4?3:0);
-      var kind=r(),pitched=kind<.35,crow=kind>=.35&&kind<.6,lift=(rel>-118&&rel<=-56)?6:0;
+      /* mostly long level ridges to the street; a sharp gable now and then,
+         crow-steps only in the Old Town */
+      var kind=r(),pitched=kind<.1&&bw<=7,crow=kind>=.1&&kind<.22&&rel>-60&&rel<20,lift=0;
       for(i=0;i<bw;i++){
         var hh=bh,m=Math.min(i,bw-1-i);
-        if(pitched) hh=bh+Math.floor(m/2)+1;
-        if(crow) hh=bh+2*Math.floor((m+1)/2);            /* crow-stepped gable */
+        if(pitched) hh=bh+Math.min(m+1,4);
+        else if(crow) hh=bh+2*Math.floor((m+1)/2);       /* crow-stepped gable */
+        else hh=bh+(m>0?1:0);                            /* the ridge, a step in at each end */
         fillCol(near,x+i,hh+lift);
       }
       if(!pitched&&!crow&&r()<.8){                       /* broad stacks with a row of pots */
         var sw=bw>=8?4:3,cxs=x+1+Math.floor(r()*(bw-sw-1));
-        for(i=0;i<sw;i++){fillCol(near,cxs+i,bh+2+lift);if(i%2===0) setp(near,cxs+i,bh+2+lift,1);}
+        for(i=0;i<sw;i++){fillCol(near,cxs+i,bh+3+lift);if(i%2===0) setp(near,cxs+i,bh+3+lift,1);}
+      }
+      if(!pitched&&!crow&&bw>=7&&r()<.3){                /* now and then a stack on the party wall */
+        for(i=bw-3;i<bw;i++) fillCol(near,x+i,bh+2+lift);
       }
       /* sash windows, a whole floor lit or dark, on the building's own grid */
       var col0=x+1+Math.floor(r()*2);
