@@ -773,7 +773,7 @@
     function close(a){var R=Math.max(1,Math.round(1.5*k));
       function win(a,f){return a.map(function(v,x){for(var j=-R;j<=R;j++)v=f(v,a[(x+j+TW)%TW]);return v;});}
       return win(win(a,Math.min),Math.max);}
-    top=close(top);top2=close(top2);
+    var raw=top.slice();top=close(top);top2=close(top2);
     /* the shading bands follow a smoothed profile, so no spike or drip hangs
        off a single crust bubble; only the rims trace the real outline */
     function box(a){var o=[],R=Math.max(3,Math.round(3*k));
@@ -789,9 +789,10 @@
     function sl(a,x){return a[(x+1)%TW]-a[(x+TW-1)%TW];}  /* <0 faces the sun (west) */
     function lit(e,l,d,hi){return e>=1.5?(d<rim?1:0):e>0?hi-1:l>.8?2:hi;}
     function band(e){return e<1.5?0:e<3?1:2;}
-    var SL=.25,tS=box(top),t2S=box(top2),sh=shade(top),sh2=shade(top2),
-        G=new Uint8Array(TW*SH).fill(255),cr=Math.round(3*k);
-    for(x=0;x<TW;x++){
+    var SL=.25,t2S=box(top2),sh2=shade(top2),G=new Uint8Array(TW*SH).fill(255),cr=Math.round(3*k);
+    /* tone columns xa..xb of grid G for a given upper profile */
+    function paint(G,top,xa,xb,tS,sh){
+    for(x=xa;x<xb;x++){
       var s=Math.round(top[x]),s2=top2[x]<48*k?Math.round(top2[x]):1e9,   /* no floor in the gaps */
           l=sl(top,x),l2=sl(top2,x),e=sh[x],e2=sh2[x],
           lS=clamp(-sl(tS,x)*.2,-.3,.12),
@@ -811,7 +812,7 @@
       }
     }
     /* a lone pixel between two that agree takes their tone: no 1px drips */
-    for(var pass=0;pass<4;pass++) for(y=0;y<SH;y++) for(x=0;x<TW;x++){
+    for(var pass=0;pass<4;pass++) for(y=0;y<SH;y++) for(x=xa;x<xb;x++){
       var c=G[y*TW+x],a,b;
       if(c===255) continue;
       a=G[y*TW+(x+TW-1)%TW];b=G[y*TW+(x+1)%TW];
@@ -819,6 +820,9 @@
       if(pass>1&&a!==c&&b!==c&&a!==255&&b!==255){G[y*TW+x]=a;continue;}   /* a 1px sliver takes the sun side */
       if(pass<3&&y>0&&y<SH-1){a=G[(y-1)*TW+x];b=G[(y+1)*TW+x];if(a===b&&a!==c&&a!==255)G[y*TW+x]=a;}
     }
+    }
+    var tS0=box(top),sh0=shade(top);
+    paint(G,top,0,TW,tS0,sh0);
     function render(P){
       var c=canvas(TW,SH),g=c.getContext("2d"),id=g.createImageData(TW,SH),
           q=new Uint32Array(id.data.buffer),PP=P.map(pack);
@@ -826,7 +830,53 @@
       g.putImageData(id,0,0);
       return c;
     }
-    return {w:TW,h:SH,up:up,day:render(pal),night:render(pal2)};
+    /* the deck breathes: here and there a turret swells out of the sheet,
+       broadens and slumps back. Each life is pre-toned through the same paint,
+       so it carries the same rim and lee shadow; only the changed pixels kept */
+    var slots=[];
+    function breathe(){                                  /* built after first paint: unseen till the deck */
+    var rs=rng(seed*31+7),NS=far?0:k>1.4?2:TW>300?4:3,tries=0,T;
+    while(slots.length<NS&&tries++<300){
+      var R=(4.5+rs()*2)*k,cx=Math.round(3.3*R+12+rs()*(TW-28*k-6.6*R-24)),sc=1e9;
+      for(x=Math.round(cx-R*.5);x<=cx+R*.5;x++) sc=Math.min(sc,raw[x]);
+      var Hm=Math.min(8*k,sc-1-1.5*k);                    /* never past the row's old top line */
+      if(Hm<4*k||slots.some(function(o){return Math.abs(o.cx-cx)<40*k;})) continue;
+      slots.push({cx:cx,sc:sc,R:R,Hm:Hm,per:25+rs()*25,ph:rs(),q:rs()*.9,sx:rs()*.6-.3,
+                  cb:[0,1,2].map(function(){return [(rs()*2-1)*.6,(2+rs()*2)*k];})});
+    }
+    function dome(bx,by,br,e){for(x=Math.ceil(bx-br);x<bx+br;x++){var dx=x+.5-bx;
+      if(x>=0&&x<TW&&Math.abs(dx)<br) T[x]=Math.min(T[x],by-e*Math.sqrt(br*br-dx*dx));}}
+    slots.forEach(function(o){
+      var xa=Math.max(0,Math.round(o.cx-o.R*3.3-4*k-8)),xb=Math.min(TW,Math.round(o.cx+o.R*3.3+28*k+8));
+      var sw=0,sH=0;o.fr=[];
+      for(var f=0,FR=Math.round(2*o.Hm)+5;f<FR;f++){   /* about a pixel a frame */
+        var u=(f+.5)/FR,h=o.Hm*(u<.3?smooth(0,.3,u):1-smooth(.3,1,u)),   /* quick to rise, slow to slump */
+            tr=o.R*(.8+.5*u),rb=2.2*tr,G2=G.slice();
+        T=raw.slice();
+        dome(o.cx+o.sx*tr,o.sc+tr,rb,(.45*h+tr)/rb);       /* a broad shoulder heaving up the sheet */
+        dome(o.cx,o.sc+.2*tr,tr,(h+.2*tr)/tr);              /* and the head boiling out of it */
+        if(u>.12&&u<.75) o.cb.forEach(function(c){var bx=o.cx+c[0]*tr,br=c[1]*h/o.Hm;   /* crust while it boils */
+          if(br>1) dome(bx,Math.max(1+br,T[Math.round(bx)]+br*.6),br,1);});
+        var Tc=close(T),tS=box(Tc),sh=shade(Tc),ca=xb,cb=xa,x0=1e9,x1=-1,y0=1e9,y1=-1;
+        for(x=xa;x<xb;x++) if(Tc[x]!==top[x]||tS[x]!==tS0[x]||sh[x]!==sh0[x]){ca=Math.min(ca,x);cb=x;}
+        if(cb>=ca) paint(G2,Tc,Math.max(xa,ca-8),Math.min(xb,cb+9),tS,sh);   /* only where the profile moved */
+        for(y=0;y<SH;y++) for(x=Math.max(xa,ca-4);x<=Math.min(xb-1,cb+4);x++) if(G2[y*TW+x]!==G[y*TW+x]){
+          x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+        o.fr.push(x1<0?null:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1,sx:sw,G:G2});
+        if(x1>=0){sw+=x1-x0+1;sH=Math.max(sH,y1-y0+1);}
+      }
+      /* every frame of a life side by side on one sheet per palette */
+      [[pal,"day"],[pal2,"night"]].forEach(function(pp){
+        var c=canvas(Math.max(1,sw),Math.max(1,sH)),g=c.getContext("2d"),id=g.createImageData(c.width,c.height),
+            q=new Uint32Array(id.data.buffer),PP=pp[0].map(pack);
+        o.fr.forEach(function(f){if(f) for(y=0;y<f.h;y++) for(x=0;x<f.w;x++){
+          var j=(y+f.y)*TW+x+f.x,v=f.G[j];if(v!==G[j]&&v!==255) q[y*c.width+f.sx+x]=PP[v];}});
+        g.putImageData(id,0,0);o[pp[1]]=c;
+      });
+      o.fr.forEach(function(f){if(f) delete f.G;});
+    });
+    }
+    return {w:TW,h:SH,up:up,day:render(pal),night:render(pal2),slots:slots,breathe:breathe};
   }
 
   /* the deck from underneath: a dark, nearly flat ceiling of soft rolls, only
@@ -1192,6 +1242,7 @@
          bback:baseTile(W+41,17,SEA_BASE.map(function(c,i){return mix(c,hex("#D6A8A4"),HW[i]*.6);}),.55),
          bfront:baseTile(W+89,19,SEA_BASE,1),
          bnear:baseTile(W+137,23,SEA_BASE,1.8)};
+    [sea.front,sea.near].forEach(function(s,i){setTimeout(s.breathe,150+i*90);});
     if(!WHITE.length) whiteouts();
     land=makeLand();
     birds=[];
@@ -1396,9 +1447,17 @@
     var p=speed*deckP(t);
     var off=Math.round((p%tile.w+tile.w)%tile.w);
     ctx.globalAlpha=alpha;
+    var live=(tile.slots||[]).map(function(o){                 /* which turrets are boiling, and how far along */
+      var u=((t/o.per+o.ph)%1)/.7,f=u<1&&1-n>o.q+.1&&o.fr[Math.floor(u*o.fr.length)];
+      return f?[o,f]:null;
+    });
     for(var x=-off;x<W;x+=tile.w){
       ctx.drawImage(tile.day,x,Math.round(y));
       if(n>.02){ctx.globalAlpha=alpha*n;ctx.drawImage(tile.night,x,Math.round(y));ctx.globalAlpha=alpha;}
+      live.forEach(function(L){if(!L) return;                       /* opaque day first, so no ghost of the old tops */
+        var o=L[0],f=L[1],X=x+f.x,Y=Math.round(y)+f.y;
+        ctx.drawImage(o.day,f.sx,0,f.w,f.h,X,Y,f.w,f.h);
+        if(n>.02){ctx.globalAlpha=alpha*n;ctx.drawImage(o.night,f.sx,0,f.w,f.h,X,Y,f.w,f.h);ctx.globalAlpha=alpha;}});
     }
     var below=Math.round(y)+tile.h;
     if(below<H){
