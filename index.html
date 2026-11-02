@@ -576,11 +576,30 @@
     }
   }
 
+  /* she burns when she's sinking, not by the clock: uneven gaps, short and long
+     blasts, now and then a double, and each cycle sags one or two pixels */
+  var BURN=(function(){
+    var r=rng(29),a=[],s=0;
+    for(var k=0;k<23;k++){var d=.45+.6*r(),g=3+6*r();a.push({s:s,d:d,two:r()<.25,dip:r()<.45?2:1});s+=d+g;}
+    a.T=s;return a;
+  })();
+  function burnAt(t){
+    var u=t%BURN.T,k=BURN.length-1;while(k&&BURN[k].s>u)k--;
+    var b=BURN[k],e=k+1<BURN.length?BURN[k+1].s:BURN.T,pv=BURN[(k+BURN.length-1)%BURN.length];
+    return [b,u-b.s,e-b.s,pv.dip];
+  }
+  /* how far below trim: lifts a beat after the flame, then sags as the air cools */
+  function sag(t){
+    if(RM) return 0;
+    var q=burnAt(t),s=q[1];
+    return Math.round(q[3]*(1-smooth(.4,2.2,s))+q[0].dip*smooth(2.2,q[2],s));
+  }
+
   function drawCraft(t){
     var n=nightAt(camY),p=palette(n),im=craftImgs(n);
     var ox=craftX+Math.round(Math.sin(t*.13)*3),oy=craftY;
     /* balloon leads, shed lags: the rigging reads as a pendulum */
-    var ya=oy+Math.round(Math.sin(t*1.1)*1.2),yb=oy+Math.round(Math.sin(t*1.1-.7)*1.2);
+    var ya=oy+sag(t)+Math.round(Math.sin(t*1.1)*1.2),yb=oy+sag(t-.3)+Math.round(Math.sin(t*1.1-.7)*1.2);
 
     /* ropes from the load tapes to the eaves and the ridge */
     line(ox+BX-8,ya+BT+31,ox+HX+1,yb+HY+5,p.q);
@@ -610,14 +629,16 @@
 
     ctx.drawImage(im.a,ox,ya);
 
-    /* pennant, two frames */
+    /* pennant, two frames: the deck slides left beneath us, so we're making way
+       to the right and the air streams back past the pole to the left */
     var fl=Math.floor(t*2.6)%2;
     ctx.fillStyle=p["9"];
-    if(fl){ctx.fillRect(ox+BX+1,ya+1,4,1);ctx.fillRect(ox+BX+1,ya+2,3,1);ctx.fillRect(ox+BX+1,ya+3,1,1);}
-    else  {ctx.fillRect(ox+BX+1,ya+1,3,1);ctx.fillRect(ox+BX+1,ya+2,4,1);ctx.fillRect(ox+BX+1,ya+3,2,1);}
+    if(fl){ctx.fillRect(ox+BX-4,ya+1,4,1);ctx.fillRect(ox+BX-3,ya+2,3,1);ctx.fillRect(ox+BX-1,ya+3,1,1);}
+    else  {ctx.fillRect(ox+BX-3,ya+1,3,1);ctx.fillRect(ox+BX-4,ya+2,4,1);ctx.fillRect(ox+BX-2,ya+3,2,1);}
 
-    /* every so often the burner fires and the envelope glows from inside */
-    var ph=t%6.4,fire=!RM&&ph>4.7&&ph<5.5;
+    /* when she sinks the burner fires and the envelope glows from inside */
+    var bq=burnAt(t),bs=bq[1],bd=bq[0].d,
+        fire=!RM&&(bs<bd||bq[0].two&&bs>bd+.3&&bs<bd+.65);
     if(fire){
       var ff=Math.floor(t*12)%2;
       ctx.fillStyle=p.G;ctx.fillRect(ox+BX,ya+43,1,1);ctx.fillRect(ox+BX,ya+42-ff,1,1);
@@ -632,12 +653,12 @@
     drawGlow(ox+HX+21.5,yb+HY+11.5,5,"#FFC468",warm*.5);
     drawGlow(ox+HX+16,yb+HY+24,12,"#FFB860",warm*.28);
 
-    /* chimney smoke drifts downwind and thins out */
+    /* chimney smoke: buoyant at first, then carried back at the front row's pace */
     var smoke=n>.5?mix(hex("#D9D2E6"),hex("#7A78A6"),n):mix(hex("#F2E3DA"),hex("#D9D2E6"),n*2);
     ctx.fillStyle=css(smoke);
     for(var i=0;i<7;i++){
       var age=((t+i*.62)%4.3),a=.6*(1-age/4.3);
-      var sx=ox+HX+6.5+age*2.6+Math.sin(age*2.2+i)*.8,sy=yb+HY-7-age*5.2;
+      var sx=ox+HX+6.5-age*3+Math.sin(age*2.2+i)*.8,sy=yb+HY-7-age*(6.4-.55*age);
       var sz=age<1.1?1:2;
       ctx.globalAlpha=a;ctx.fillRect(Math.round(sx),Math.round(sy),sz,sz);
     }
