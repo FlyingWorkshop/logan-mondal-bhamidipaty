@@ -997,9 +997,11 @@
        the castle, then the long tail down the Royal Mile */
     profile(mid,[[-114,18],[-111,24],[-108,29],[-105,32],[-50,32],[-40,32],[-38,30],[-36,26],
                  [-32,23],[-28,22],[-18,22],[-8,21],[12,19],[22,18]],AX);
-    /* Calton Hill: crag-faced west end, Dugald Stewart's shoulder, a level top */
-    profile(mid,[[26,18],[28,23],[30,28],[32,31],[33,32],[38,32],[40,33],[42,34],[72,34],
-                 [74,29],[76,23],[78,18]],AX);
+    /* Calton Hill: crag-faced west end, Dugald Stewart's shoulder, a level top.
+       Drawn a little lower than the castle rock and drawn in tighter, so the
+       gap before the Crags holds Old College's dome against open sky */
+    profile(mid,[[22,18],[24,21],[26,24],[28,27],[29,28],[34,28],[36,29],[38,30],[65,30],
+                 [67,26],[69,22],[71,18]],AX);
     /* Arthur's Seat: the sheer prow and level table of Salisbury Crags, a step
        down, then the lion: head, notch, long back, tail */
     profile(mid,[[76,18],[78,22],[80,32],[80,40],[81,44],[84,45],[98,45],[106,44],[112,44],
@@ -1007,7 +1009,7 @@
                  [142,35],[148,38],[154,42],[160,47],[164,51],[168,54],[170,56],[171,59],[172,62],[173,64],
                  [176,64],[177,63],[178,61],[179,58],[180,57],[183,58],[187,60],[194,60],[197,59],
                  [200,57],[204,53],[208,47],[212,41],[216,35],[220,31],[226,27],[232,24],[238,21],
-                 [242,18]],AX);
+                 [242,18]],AX+5);                                   /* nudged east to open the gap */
     /* the castle from the south: a long, nearly level roofline and no keep.
        West to east: the rampart and its sentry box, the War Museum, the big flat
        New Barracks, a dip, the Crown Square range and Great Hall with the War
@@ -1028,16 +1030,18 @@
     block(mid,-49,-46,40);                                               /* gatehouse; the Esplanade beyond */
     /* Calton Hill: Dugald Stewart's round temple, the City Observatory, Nelson's
        upturned telescope with its time-ball mast, the unfinished Parthenon */
-    for(x=33;x<=37;x++) setp(mid,AX+x,32,1);
-    for(y=33;y<=34;y++) for(x=33;x<=37;x++) setp(mid,AX+x,y,(x===34||x===36)?1:0);
-    for(x=33;x<=37;x++) setp(mid,AX+x,35,1);
-    for(x=34;x<=36;x++) setp(mid,AX+x,36,1);
-    setp(mid,AX+35,37,1);
-    block(mid,41,45,35);block(mid,42,44,36);
-    block(mid,47,55,36);setp(mid,AX+47,36,1);setp(mid,AX+55,36,1);
-    block(mid,50,52,39);for(x=49;x<=53;x++) setp(mid,AX+x,39,1);
-    block(mid,50,52,42);block(mid,51,51,45);setp(mid,AX+50,43,1);setp(mid,AX+52,43,1);
-    block(mid,59,71,40);for(x=60;x<=70;x+=2) for(y=35;y<=38;y++) setp(mid,AX+x,y,0);setp(mid,AX+58,34,1);setp(mid,AX+72,34,1);
+    function cp(x,y,v){setp(mid,AX+x,y-4,v);}                          /* Calton: 4px lower than it was */
+    function cb(x0,x1,top){block(mid,x0,x1,top-4);}
+    for(x=29;x<=33;x++) cp(x,32,1);                                      /* Dugald Stewart */
+    for(y=33;y<=34;y++) for(x=29;x<=33;x++) cp(x,y,(x===30||x===32)?1:0);
+    for(x=29;x<=33;x++) cp(x,35,1);
+    for(x=30;x<=32;x++) cp(x,36,1);
+    cp(31,37,1);
+    cb(37,41,35);cb(38,40,36);                                           /* Observatory */
+    cb(43,51,36);cp(43,36,1);cp(51,36,1);                                /* Nelson */
+    cb(46,48,39);for(x=45;x<=49;x++) cp(x,39,1);
+    cb(46,48,42);cb(47,47,45);cp(46,43,1);cp(48,43,1);
+    cb(54,64,40);for(x=55;x<=63;x+=2) for(y=35;y<=38;y++) cp(x,y,0);cp(53,34,1);cp(65,34,1);  /* National Monument */
 
     /* near: tenements, spires, a clock tower */
     var near=grid();windows=[];
@@ -1074,10 +1078,6 @@
     function stamp(art,x0,top){
       art.forEach(function(row,k){for(var c=0;c<row.length;c++) setp(near,AX+x0+c,top-k,row[c]==="#"?1:0);});
     }
-    /* the Hub: the Old Town's tallest spire, just east of the castle */
-    block(near,-46,-36,27);block(near,-45,-37,28);block(near,-44,-38,29);   /* tall Castlehill houses */
-    block(near,-41,-35,40);
-    stamp(["...#...","...#...","...#...","..###..","..###..","..###..","#.###.#","#.###.#","#######"],-41,49);
     /* Scott Monument over the roofs, as from the south: spire, lantern, tower,
        corner pinnacles with flying buttresses, down to the cornice */
     var SM=-27;
@@ -1131,6 +1131,31 @@
     block(near,19,21,37);block(near,20,20,39);
     [[20,30],[19,30],[21,30],[20,29],[20,31]].forEach(function(p){
       windows.push({x:AX+p[0],h:p[1],tall:false,ph:0,sp:0,c:"#FFE9AE",clock:true});});
+
+    /* a tenement and its stack closing the chink between St Giles and the Balmoral */
+    block(near,-1,5,22);block(near,0,2,23);setp(near,AX+0,23,1);setp(near,AX+2,23,1);setp(near,AX+1,23,0);
+    /* Old College, moved out east under Arthur's Seat so it answers the castle
+       across the town (not where it stands, but where the eye wants it): the
+       long classical front, the square entrance stage with round corner
+       turrets and a cornice, a plain drum, the ribbed lead dome, a slim
+       lantern and the gilded torch-bearer catching the last of the sun */
+    var OC=74;
+    clear(OC-12,OC+12,13);
+    windows=windows.filter(function(w){return w.x<AX+OC-12||w.x>AX+OC+12||(w.h<11&&Math.abs(w.x-AX-OC)>9);});
+    block(near,OC-8,OC+8,16);                                          /* the long front, */
+    block(near,OC-3,OC+3,19);                                            /* a low entrance stage */
+    block(near,OC+9,OC+15,21);block(near,OC+11,OC+13,22);               /* South Side roofs up to the foot of the Crags */
+    stamp(["...#...",
+           "..###..",
+           ".#####.",
+           ".#####.",
+           "#######"],OC-3,23);                                          /* drum, small dome, lantern */
+    for(y=7;y<=13;y+=3) for(x=OC-7;x<=OC+7;x+=2) if(Math.abs(x-OC)>1&&(x*5+y*3)%4===0)
+      windows.push({x:AX+x,h:y,tall:true,ph:x*.5+y,sp:.03,c:"#FFD07A"});
+    [[OC-2,21,"#8A90A8"],[OC-1,22,"#8A90A8"]].forEach(function(p){
+      windows.push({x:AX+p[0],h:p[1],tall:false,ph:0,sp:0,c:p[2],clock:true});});      /* lead dome, pale on the sunward shoulder */
+    [[OC,24,"#E0A844"],[OC,25,"#FFE7A0"]].forEach(function(p){
+      windows.push({x:AX+p[0],h:p[1],tall:false,ph:0,sp:0,c:p[2],clock:true});});
 
     /* shade a layer: vertical ramp, sunlit rim along top and left edges */
     function shade(g,top,bot,rim,rimL){
@@ -1186,11 +1211,11 @@
     /* castle windows: rows on the barracks, the hall, the palace, the battery */
     function win(c,pts){mg.fillStyle=c;pts.forEach(function(p){mg.fillRect(AX+p[0],LH-1-p[1],1,1);});}
     var dk=[];
-    for(x=-96;x<=-84;x+=2) [36,38,40,42,44].forEach(function(h){dk.push([x,h]);});
+    for(x=-96;x<=-84;x+=2) [37,41].forEach(function(h){dk.push([x,h]);});
     [-68,-65,-63].forEach(function(x){dk.push([x,42]);});
     dk.push([-58,42],[-58,44],[-54,41],[-52,41]);
-    win("#33264A",dk);
-    win("#E9B57E",[[-92,42],[-86,40],[-73,42],[-57,44]]);
+    win("#45355E",dk);
+    win("#E9B57E",[[-92,41],[-86,37],[-73,42],[-57,44]]);
     var nearC=shade(near,"#2C2139","#1C1528","#6E4C66","#5A3E58");
     return {far:farC,mid:midC,near:nearC,water:water};
   }
