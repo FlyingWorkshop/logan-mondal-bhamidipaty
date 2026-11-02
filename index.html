@@ -755,7 +755,8 @@
       var hf=30+6*Math.sin(x*.021+1)+4*Math.sin(x*.057+2)+2*Math.sin(x*.13)
             +10*smooth(0,1,1-Math.abs((x-AX-10)/90))
             -12*smooth(0,1,1-Math.abs((x-SUN.x)/46));         /* open water under the sun */
-      hf+=(19-hf)*smooth(0,1,(x-AX-200)/40);               /* open sea past the Lion's tail */
+      hf=Math.max(hf,23);                                   /* always above the firth */
+      hf+=(22-hf)*smooth(0,1,(x-AX-200)/40);               /* open sea past the Lion's tail */
       fillCol(far,x,hf);
     }
     /* mid: castle rock, Calton Hill, Arthur's Seat */
@@ -889,6 +890,10 @@
     block(near,6,10,23);block(near,7,9,24);setp(near,AX+8,24,1);
     block(near,30,34,23);block(near,31,33,24);setp(near,AX+32,24,1);
     [13,15,25,27].forEach(function(cx){block(near,cx,cx,25);});
+    /* the hotel's own windows, in place of the tenements it was built over */
+    windows=windows.filter(function(w){return w.x<AX+5||w.x>AX+35;});
+    for(y=7;y<=16;y+=3) for(x=6;x<=34;x+=2) if((x*3+y*5)%7===0)
+      windows.push({x:AX+x,h:y,tall:true,ph:x*.7+y,sp:.03,c:"#FFD07A"});
     block(near,17,23,33);
     setp(near,AX+16,27,1);setp(near,AX+24,27,1);
     block(near,17,17,35);block(near,23,23,35);
@@ -913,11 +918,22 @@
       gx.putImageData(id,0,0);
       return c;
     }
-    /* the firth: a strip of evening light under the far hills */
+    /* the firth: a strip of evening light under the far hills, just above the roofs */
     var farC=shade(far,"#B48FA6","#957A9C","#F3C3A5");
     var fg=farC.getContext("2d");
-    for(y=LH-19;y<LH-15;y++){fg.fillStyle=y===LH-19?"#FFE0B6":"#E9B7A2";fg.fillRect(0,y,W,1);}
-    for(i=0;i<W/6;i++) water.push({x:Math.floor(r()*W),y:LH-18+Math.floor(r()*3),ph:r()*6.28});
+    for(y=LH-22;y<LH-18;y++){fg.fillStyle=y===LH-22?"#FFE0B6":"#E9B7A2";fg.fillRect(0,y,W,1);}
+    for(i=0;i<W/6;i++) water.push({x:Math.floor(r()*W),y:LH-21+Math.floor(r()*3),ph:r()*6.28});
+    /* where the water would only peek through a chink between roofs or hills,
+       make it shore instead, so no stray bright pixels leak through */
+    var shore=new Uint8Array(W),run=[];
+    for(x=0;x<=W;x++){
+      var seen=false;
+      if(x<W) for(y=18;y<=21;y++){var p=(LH-1-y)*W+x;if(!mid[p]&&!near[p]) seen=true;}
+      if(seen){run.push(x);continue;}
+      if(run.length&&run.length<6) run.forEach(function(c){shore[c]=1;fg.drawImage(farC,c,LH-18,1,1,c,LH-22,1,4);});
+      run=[];
+    }
+    water=water.filter(function(w){return !shore[w.x]&&!shore[Math.min(w.x+1,W-1)];});
 
     var midC=shade(mid,"#5A4470","#3E2F55","#E7A07C","#C98778");
     var mg=midC.getContext("2d");
