@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EPCA 3D curve</title>
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head><body>
+<canvas id="c" width="120" height="90" role="img" aria-label="Pixel art: a slowly turning 3D cloud of positive data points that bends around a corner. A straight teal PCA line cuts across the bend and misses it; an orange EPCA curve draws itself along the cloud and follows the bend."></canvas>
+<script>
+/* Illustrative synthetic data only, not a result from the paper. Both fits are computed here:
+   - data: x = exp(t v) * lognormal noise in 3D, t uniform (positive and curved);
+   - EPCA: rank-1 Poisson EPCA, x ~ exp(a_i V), minimising sum exp(aV) - x*aV (the Poisson
+     Bregman divergence up to constants) by alternating Newton steps;
+   - PCA: ordinary centred rank-1 PCA (mean + top eigenvector), clipped to the data's extent. */
+(()=>{
+const W=120,H=90,cv=document.getElementById('c'),g=cv.getContext('2d'),img=g.createImageData(W,H),buf=new Uint32Array(img.data.buffer),zb=new Float32Array(W*H);
+const hex=s=>{const n=parseInt(s.slice(1),16);return 0xff000000|(n&255)<<16|(n>>8&255)<<8|n>>16};
+const R=a=>a.map(hex),NIGHT=hex('#16121F');
+const PTS=R(['#EEE7DA','#D2CBC1','#B3ACB4','#8E879A','#6E677C','#544D62']),PTH=hex('#FFFAF0');
+const EP=R(['#F8D3A0','#F2A25C','#D9894A','#B86A3A','#8A4F33','#5C392C','#33242A']);
+const PC=R(['#A9D6C8','#7FB5A6','#66978A','#4F7A70','#3D5E58','#2E4644','#23302F']);
+// ---- synthetic data (seeded) ----
+let sd=11;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647,gau=()=>Math.sqrt(-2*Math.log(rnd()+1e-12))*Math.cos(6.2832*rnd());
+const v=[1.1,-1.1,.55],X=[];
+for(let i=0;i<300;i++){const t=-1.3+2.6*(i+rnd())/300;X.push(v.map(c=>Math.exp(c*t+.16*gau())))}
+// ---- rank-1 Poisson EPCA: x ~ exp(a V) ----
+let V=[1,-.6,.3];const A=X.map(()=>.1);
+for(let it=0;it<60;it++){
+  for(let i=0;i<X.length;i++){let a=A[i];for(let k=0;k<3;k++){let g1=0,g2=1e-6;for(let j=0;j<3;j++){const e=Math.exp(a*V[j]);g1+=V[j]*(e-X[i][j]);g2+=V[j]*V[j]*e}a-=Math.max(-.5,Math.min(.5,g1/g2))}A[i]=a}
+  for(let j=0;j<3;j++){let b=V[j];for(let k=0;k<3;k++){let g1=0,g2=1e-6;for(let i=0;i<X.length;i++){const e=Math.exp(A[i]*b);g1+=A[i]*(e-X[i][j]);g2+=A[i]*A[i]*e}b-=Math.max(-.5,Math.min(.5,g1/g2))}V[j]=b}
+}
+const as=[...A].sort((a,b)=>a-b),amin=as[3],amax=as[as.length-4],CUR=[];for(let k=0;k<=120;k++){const a=amin+(amax-amin)*k/120;CUR.push(V.map(c=>Math.exp(a*c)))}
+// ---- centred rank-1 PCA ----
+const mu=[0,1,2].map(j=>X.reduce((s,x)=>s+x[j],0)/X.length),C=[[0,0,0],[0,0,0],[0,0,0]];
+for(const x of X)for(let r=0;r<3;r++)for(let c=0;c<3;c++)C[r][c]+=(x[r]-mu[r])*(x[c]-mu[c]);
+let u=[1,1,1];for(let k=0;k<80;k++){const w=C.map(r=>r[0]*u[0]+r[1]*u[1]+r[2]*u[2]),n=Math.hypot(...w);u=w.map(c=>c/n)}
+const pr=X.map(x=>(x[0]-mu[0])*u[0]+(x[1]-mu[1])*u[1]+(x[2]-mu[2])*u[2]).sort((a,b)=>a-b),p0=pr[2],p1=pr[pr.length-3];
+const LIN=[];for(let k=0;k<=40;k++){const s=p0+(p1-p0)*k/40;LIN.push(mu.map((m,j)=>m+s*u[j]))}
+// ---- normalise into a display box ----
+const lo=[0,1,2].map(j=>Math.min(...X.map(x=>x[j]))),hi=[0,1,2].map(j=>Math.max(...X.map(x=>x[j])));
+const ctr=lo.map((l,j)=>(l+hi[j])/2),SC=2/Math.max(...hi.map((h,j)=>h-lo[j]));
+const nm=p=>[(p[0]-ctr[0])*SC,(p[1]-ctr[1])*SC,(p[2]-ctr[2])*SC*1.4];
+const XP=X.map(nm),CP=CUR.map(nm),LP=LIN.map(nm);
+// ---- camera ----
+const E=.62,ce=Math.cos(E),se=Math.sin(E),D=5;let cp=1,sp=0,F=1,CX=0,CY=0;
+function setYaw(y){cp=Math.cos(y);sp=Math.sin(y)}
+function proj(p){const x1=p[0]*cp-p[1]*sp,y1=p[0]*sp+p[1]*cp,z=p[2],d=y1*ce-z*se+D;return[CX+F*x1/d,CY-F*(y1*se+z*ce)/d,d]}
+// choose the yaw window where the bend reads best (gap between corner and PCA line), so the orbit never flattens it
+const AMP=.2,LOOP=8;
+const YAW=1.3; // orbit centre and range picked so the bend never flattens
+// fit the whole orbit into ~80% of the frame, centred
+{let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let k=0;k<24;k++){setYaw(YAW+AMP*Math.sin(k/24*6.283));for(const p of[...XP,...LP]){const q=proj(p);x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])}}
+  F=Math.min(.86*W/(x1-x0),.84*H/(y1-y0));CX=W/2-F*(x0+x1)/2;CY=H/2-F*(y0+y1)/2}
+let dmin=1e9,dmax=-1e9;for(const p of XP){setYaw(YAW);const d=proj(p)[2];dmin=Math.min(dmin,d);dmax=Math.max(dmax,d)}
+const dn=d=>Math.min(1,Math.max(0,(d-dmin)/(dmax-dmin)));
+function put(x,y,d,c,bias){x|=0;y|=0;if(x<0||y<0||x>=W||y>=H)return;const k=y*W+x;if(d-bias<zb[k]){zb[k]=d-bias;buf[k]=c}}
+function seg(P,Q,col,bias,th){let x0=Math.round(P[0]),y0=Math.round(P[1]);const x1=Math.round(Q[0]),y1=Math.round(Q[1]),dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,L=Math.max(dx,-dy)||1;let e=dx+dy,i=0;
+  for(;;){const t=i++/L,d=P[2]+(Q[2]-P[2])*t,c=col(d);put(x0,y0,d,c,bias);if(th){put(x0+1,y0,d,c,bias);put(x0,y0+1,d,c,bias);put(x0+1,y0+1,d,c,bias)}if(x0===x1&&y0===y1)break;const e2=2*e;if(e2>=dy){e+=dy;x0+=sx}if(e2<=dx){e+=dx;y0+=sy}}}
+// 5x7 pixel font, drawn with a 1px night outline
+const FT={P:'11110100011000111110100001000010000',C:'01110100011000010000100001000101110',A:'01110100011000110001111111000110001',E:'11111100001000011110100001000011111'};
+function txt(s,x,y,c){x=Math.round(x);y=Math.round(y);const on=(ch,i,j)=>ch&&i>=0&&j>=0&&i<5&&j<7&&FT[ch][j*5+i]==='1';
+  for(let pass=0;pass<2;pass++){let cx=x;for(const ch of s){for(let j=-1;j<8;j++)for(let i=-1;i<6;i++){const X0=cx+i,Y0=y+j;if(X0<0||Y0<0||X0>=W||Y0>=H)continue;
+    if(pass){if(on(ch,i,j))buf[Y0*W+X0]=c}else if(!on(ch,i,j)&&(on(ch,i-1,j)||on(ch,i+1,j)||on(ch,i,j-1)||on(ch,i,j+1)))buf[Y0*W+X0]=NIGHT}cx+=6}}}
+const lbl=(s,cx,cy,c)=>{const w=s.length*6-1;txt(s,Math.max(1,Math.min(W-w-1,cx-w/2)),Math.max(1,Math.min(H-8,cy-3.5)),c)};
+function draw(ts){
+  ts=((ts%LOOP)+LOOP)%LOOP;
+  setYaw(YAW+AMP*Math.sin(ts/LOOP*Math.PI*2));
+  buf.fill(NIGHT);zb.fill(1e9);
+  const grow=Math.min(1,Math.max(0,(ts-.6)/2.8)),ease=grow*grow*(3-2*grow),nE=Math.round(ease*(CP.length-1)),fade=ts>7.2?Math.min(7,Math.floor((ts-7.2)/.1)):0;
+  // PCA line (teal), thick
+  const L0=LP.map(proj);
+  for(let k=1;k<L0.length;k++)seg(L0[k-1],L0[k],d=>PC[Math.min(6,1+Math.round(dn(d)*3))],.15,1);
+  // EPCA curve (orange) traces in, holds, fades
+  const C0=CP.map(proj);
+  if(fade<7&&nE>0){for(let k=1;k<=nE;k++)seg(C0[k-1],C0[k],d=>EP[Math.min(6,Math.round(dn(d)*2)+fade)],.5,1);
+    if(grow<1){const p=C0[nE];for(let dy=-1;dy<=2;dy++)for(let dx=-1;dx<=2;dx++)if(!((dx==-1||dx==2)&&(dy==-1||dy==2)))put(p[0]+dx,p[1]+dy,p[2],EP[(dx==-1||dx==2||dy==-1||dy==2)?1:0],2)}}
+  // data points: chunky 2x2, shaded by depth, top-left highlight on near ones
+  for(const c of XP){const p=proj(c),q=dn(p[2]),lv=Math.min(5,Math.round(q*5)),x=Math.round(p[0]-.5),y=Math.round(p[1]-.5);
+    put(x,y,p[2],q<.25?PTH:PTS[lv],0);put(x+1,y,p[2],PTS[lv],0);put(x,y+1,p[2],PTS[lv],0);put(x+1,y+1,p[2],PTS[Math.min(5,lv+1)],0)}
+  // labels next to their lines: PCA on the empty side of the line, EPCA just past the bend
+  const a=L0[0],b=L0[L0.length-1],dx=b[0]-a[0],dy=b[1]-a[1],Ln=Math.hypot(dx,dy);let nx=-dy/Ln,ny=dx/Ln,K=C0[0],km=-1;
+  const Cm=C0[C0.length>>1];if((Cm[0]-a[0])*nx+(Cm[1]-a[1])*ny<0){nx=-nx;ny=-ny}
+  for(const p of C0){const s=(p[0]-a[0])*nx+(p[1]-a[1])*ny;if(s>km){km=s;K=p}}
+  let ko=0;for(const c of XP){const p=proj(c);if(Math.hypot(p[0]-K[0],p[1]-K[1])<14)ko=Math.max(ko,(p[0]-K[0])*nx+(p[1]-K[1])*ny)}
+  const M=L0[L0.length>>1],ox=Math.abs(nx)*9+Math.abs(ny)*5;
+  lbl('PCA',M[0]-nx*ox,M[1]-ny*ox,PC[0]);
+  if(fade<5&&grow>.85){const e=ko+Math.abs(nx)*12+Math.abs(ny)*6;lbl('EPCA',K[0]+nx*e,K[1]+ny*e,EP[Math.min(6,(grow<.92?2:grow<1?1:0)+fade)])}
+  g.putImageData(img,0,0);
+}
+const ft=/t=([\d.]+)/.exec(location.hash);
+addEventListener('hashchange',()=>location.reload());
+if(ft||matchMedia('(prefers-reduced-motion: reduce)').matches){draw(ft?+ft[1]:5);return}
+let last=-99;const OFF=4,t0=performance.now()-OFF*1000;
+function tick(now){if(now-last>=15.5){last=now;draw((now-t0)/1000)}requestAnimationFrame(tick)}
+draw(OFF);requestAnimationFrame(tick);
+})();
+</script></body></html>

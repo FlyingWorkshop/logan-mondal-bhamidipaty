@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model bridge</title>
+<!--
+  Imperfect World Models are Exploitable.
+  Metaphor, not an experiment from the paper (the paper's examples are a
+  3-state MDP). The learned model has an error: it shows a bridge over a pit.
+  The model's predicted robot (lavender hologram) walks the plan across and
+  reaches the flag. The real robot follows the same plan and drops into the pit.
+  Art is 80x60, scaled by a whole number of device pixels.
+  #t=<seconds> freezes the loop at that time.
+-->
+<style>
+  html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center}
+  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head>
+<body>
+<canvas id="c" width="80" height="60" aria-label="In the learned model a robot crosses a bridge to the flag; in reality there is no bridge and the robot falls into the pit"></canvas>
+<script>
+(function(){
+var W=80,H=60,c=document.getElementById("c"),g=c.getContext("2d");
+var C={n:"#16121F",p:"#1E1829",q:"#272036",k:"#0D0A13",b:"#EEE7DA",t:"#C9C2B8",m:"#8E879A",
+  a:"#F2A25C",s:"#F8D3A0",v:"#B9A9E6",w:"#7D6DB8",u:"#4A3F72",r:"#E0605A",d:"#5F586C"};
+/* canvas is extended past the 80x60 art so the scene fills any viewport;
+   BX,BY centre the art inside it */
+var CW=W,CH=H,BX=0,BY=0,curT=null,key="";
+function fit(){var d=window.devicePixelRatio||1,iw=innerWidth||W,ih=innerHeight||H,
+  s=Math.max(1,Math.floor(Math.min(iw*d/W,ih*d/H))),cw=Math.ceil(iw*d/s),ch=Math.ceil(ih*d/s),
+  k=cw+"x"+ch+"x"+s+"x"+d;if(k==key)return;key=k;CW=cw;CH=ch;
+  BX=Math.floor((CW-W)/2);BY=Math.floor((CH-H)/2);c.width=CW;c.height=CH;
+  c.style.width=CW*s/d+"px";c.style.height=CH*s/d+"px";if(curT!==null)draw(curT);}
+fit();addEventListener("resize",fit);addEventListener("load",fit);
+if(window.ResizeObserver)new ResizeObserver(fit).observe(document.documentElement);
+var ox=0,oy=0;
+function rect(x,y,w,h,k){g.fillStyle=C[k]||k;g.fillRect(x+ox+BX,y+oy+BY,w,h);}
+function px(x,y,k){rect(x,y,1,1,k);}
+/* 5x7 font */
+var B={M:"10001110111010110101100011000110001",O:"01110100011000110001100011000101110",
+  D:"11110100011000110001100011000111110",E:"11111100001000011110100001000011111",
+  L:"10000100001000010000100001000011111",R:"11110100011000111110101001001010001",
+  A:"01110100011000111111100011000110001"};
+function txt(s,x,y,k){for(var i=0;i<s.length;i++){var f=B[s[i]];
+  for(var j=0;j<35;j++)if(f[j]=="1")px(x+j%5,y+(j/5|0),k);x+=6;}}
+function spr(rows,x,y,map){for(var j=0;j<rows.length;j++)for(var i=0;i<rows[j].length;i++){
+  var ch=rows[j][i];if(ch!="."){var k=map[ch];if(typeof k=="function")k=k(x+i,y+j);if(k)px(x+i,y+j,k);}}}
+function hash(i){var h=Math.sin(i*127.1+311.7)*43758.5453;return h-Math.floor(h);}
+/* robot, 11x14, facing right */
+var BODY=[".....a.....",".....m.....",".bbbbbbbbb.",".bnnnnEEnb.",".bnnnnEEnb.",".bnnnnnnnb.",
+  ".bbbbbbbbb.","...mmmmm...","mbbbbbbbbbm","mbbbaabbbbm","mbbbbbbbbbm",".bbbbbbbbb."];
+var LEGS=[["..mm...mm..","..dd...dd.."],["...mm.mm...","...dd.dd..."],[".mm.....mm.",".dd.....dd."],["...mm.mm...","...dd.dd..."]];
+var LOOK=[".....a.....",".....m.....",".bbbbbbbbb.",".bnnnnnnnb.",".bnnnnnEEb.",".bnnnnnEEb.",
+  ".bbbbbbbbb.","...mmmmm...","mbbbbbbbbbm","mbbbaabbbbm","mbbbbbbbbbm",".bbbbbbbbb."];
+var SQUASH=[".....a.....",".bbbbbbbbb.",".bnEEnEEnb.",".bnnnnnnnb.",".bbbbbbbbb.",
+  "mbbbbbbbbbm","mbbbaabbbbm",".mmmmmmmmm."];
+var CHECK=["........vv",".......vv.","......vv..","vv...vv...",".vv.vv....","..vvv.....","...v......"];
+var CROSS=["rr....rr",".rr..rr.","..rrrr..","...rr...","..rrrr..",".rr..rr.","rr....rr"];
+var BANG=["r","r","r",".","r"];
+var GY=38,P0=26,P1=53,FL=70;           /* ground row, pit columns, flag */
+var T0=0.5,V=16,XR=2,XG=15,XGE=57,XE=25,RY=24; /* start, speed, real/ghost start, ghost end, edge */
+var TE=T0+(XE-XR)/V,TD=TE+0.4,GR=170,YB=44,TL=TD+Math.sqrt(2*(YB-RY)/GR),L=7;
+var TG=T0+(XGE-XG)/V;
+function realMap(e){return {a:"a",m:"m",b:"b",n:"k",E:e,d:"d"};}
+function ghostMap(t){return {a:"v",m:"w",b:function(x,y){return (y+((t*8)|0))%3==0?"w":"v";},
+  n:"u",E:"b",d:"w"};}
+function pop(t,t0){var u=(t-t0)/0.18;return u<0?0:u<1?1:1;}
+function draw(t){
+  curT=t;ox=0;oy=0;g.fillStyle=C.n;g.fillRect(0,0,CW,CH);
+  var X0=-BX,X1=CW-BX,Y1=CH-BY;
+  if(t>TL&&t<TL+0.25){oy=((t*40)|0)%2;}
+  var i,j;
+  /* stars */
+  for(i=0;i<9+((CW-W)/8|0);i++){var sx=X0+(hash(i)*CW)|0,sy=(hash(i+20)*24)|0;
+    px(sx,sy,((t*2+i)|0)%5==0?"m":"q");}
+  /* ground blocks */
+  for(i=X0;i<X1;i++){if(i>=P0&&i<=P1)continue;
+    px(i,GY,"t");px(i,GY+1,"m");rect(i,GY+2,1,Y1-GY-2,"p");
+    for(j=GY+3;j<Y1;j+=3)if((i*7+j*3)%11==0)px(i,j,"q");}
+  /* pit */
+  rect(P0,GY,P1-P0+1,Y1-GY,"k");
+  for(j=GY;j<Y1;j++){px(P0-1,j,j%3?"d":"q");px(P1+1,j,j%3?"d":"q");}
+  rect(P0,H-2,P1-P0+1,Y1-H+2,"q");
+  for(i=P0;i<=P1;i+=3)px(i+(i%2),H-3,"d");
+  /* REAL label carved on the left cliff */
+  txt("REAL",1,GY+8,"t");
+  /* MODEL label over the hologram bridge */
+  txt("MODEL",25,6,"v");
+  /* hologram bridge (exists only in the model) */
+  var holeA=XE+1,holeB=XE+10,broke=t>TD;
+  for(i=P0;i<=P1;i++){
+    var inHole=broke&&i>=holeA&&i<=holeB;
+    if(!inHole){
+      if(((i+((t*6)|0))%4)!=3)px(i,GY,"v");
+      if((i%2)==0)px(i,GY+1,"w");
+      var k=(i-P0)%6;px(i,GY+2+(k<3?k:5-k),"u");
+    }
+  }
+  /* bridge shards falling after the break */
+  if(broke){for(i=holeA;i<=holeB;i++){var dt=t-TD-hash(i)*0.15;if(dt<0){px(i,GY,"v");continue;}
+    var y=GY+0.5*GR*dt*dt*(0.7+hash(i+5)*0.5),x=i+(hash(i+9)-0.5)*dt*10;
+    if(y<H-3&&((t*12+i)|0)%3)px(Math.round(x),Math.round(y),i%2?"v":"w");}}
+  /* flag */
+  rect(FL,GY-13,1,13,"m");
+  var wv=((t*4)|0)%2;rect(FL+1,GY-13,6,4,"a");px(FL+6,GY-13+(wv?3:0),"n");px(FL+5,GY-13+(wv?0:3),"n");
+  /* ghost robot (model's prediction) */
+  var gx=Math.min(XGE,XG+V*Math.max(0,t-T0)),gm=t>T0&&gx<XGE;
+  var gfr=gm?((t*8)|0)%4:0,gj=((t*13)|0)%17==0?1:0;
+  spr(BODY,Math.round(gx)+gj,RY,ghostMap(t));spr(LEGS[gfr],Math.round(gx)+gj,RY+12,ghostMap(t));
+  if(t>TG+0.1){var cs=pop(t,TG+0.1);spr(CHECK,XGE+1,RY-10-(t<TG+0.25?1:0),{v:"v"});}
+  /* real robot */
+  var rx=Math.min(XE,XR+V*Math.max(0,t-T0)),ry=RY,st="walk";
+  if(t>=TE)st="look";
+  if(t>=TD){var d2=t-TD;st="fall";ry=Math.min(YB,RY+0.5*GR*d2*d2);rx=XE+Math.min(d2,TL-TD)*6;}
+  if(t>=TL)st="down";
+  rx=Math.round(rx);ry=Math.round(ry);
+  if(st=="walk"){var fr=t>T0?((t*8)|0)%4:0;spr(BODY,rx,ry,realMap("a"));spr(LEGS[fr],rx,ry+12,realMap("a"));}
+  else if(st=="look"){spr(LOOK,rx,ry,realMap("a"));spr(LEGS[0],rx,ry+12,realMap("a"));
+    if(t>TE+0.08)spr(BANG,rx+12,ry-3,{r:"r"});}
+  else if(st=="fall"){spr(LOOK,rx,ry,realMap("a"));spr(LEGS[2],rx,ry+12,realMap("a"));
+    for(i=0;i<3;i++)rect(rx+2+i*3,ry-4-i%2*2,1,3,"m");}
+  else{var blink=((t*3)|0)%2?"r":"d";spr(SQUASH,rx,H-10,realMap(blink));
+    var dt3=t-TL;if(dt3<0.45){for(i=0;i<8;i++){var a=i/8*Math.PI,r=2+dt3*22;
+      var dx=Math.cos(a)*r*1.4,dy=-Math.sin(a)*r*0.6;
+      if(dt3<0.3||i%2)px(Math.round(rx+5+dx),Math.round(H-3+dy),i%2?"t":"m");}}
+    if(t>TL+0.15)spr(CROSS,rx+1,H-19,{r:"r"});}
+  /* fades */
+  if(t>L-0.7)fade((t-(L-0.7))/0.5);
+  if(t<0.3)fade(1-t/0.3);
+}
+var BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+function fade(k){if(k<=0)return;g.fillStyle=C.n;
+  for(var y=0;y<CH;y++)for(var x=0;x<CW;x++)if(BAY[(y%4)*4+x%4]<k*16)g.fillRect(x,y,1,1);}
+var STILL=4.6;
+var rm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+var q=(location.hash+location.search).match(/t=([\d.]+)/);
+if(q){draw(+q[1]%L);return;}
+if(rm){draw(STILL);return;}
+var last=0,st=null;
+function loop(now){requestAnimationFrame(loop);
+  if(now-last<15)return;last=now;if(st===null)st=now-350;
+  draw(((now-st)/1000)%L);}
+draw(STILL);requestAnimationFrame(loop);
+})();
+</script>
+</body></html>

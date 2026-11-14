@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RENEW maze repair</title>
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head><body>
+<canvas id="c" role="img" aria-label="A robot in an imagined maze cuts through a wall the world model got wrong; a human picks the realistic rollout, the wall is repaired, and the robot takes the legal route."></canvas>
+<script>
+(()=>{
+const W=120,H=90,T=8;
+const C={night:'#16121F',panel:'#1E1829',hi:'#272036',bone:'#EEE7DA',text:'#C9C2B8',muted:'#8E879A',acc:'#F2A25C',soft:'#F8D3A0',
+ wall:'#4E4369',wallTop:'#6A5C8C',wallSh:'#2E2640',floor:'#211B2D',dot:'#2B2439',heat:'#A8457A',red:'#E0605A',green:'#7CC47F'};
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const off=document.createElement('canvas');off.width=W;off.height=H;const g=off.getContext('2d');
+const B=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+const px=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w,h)};
+// dithered rect: pixel drawn where bayer < a*16
+function dith(x,y,w,h,c,a){if(a<=0)return;if(a>=1){px(x,y,w,h,c);return}g.fillStyle=c;
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(B[(y+j)&3][(x+i)&3]<a*16)g.fillRect(x+i,y+j,1,1)}}
+const F3={A:'010101111101101',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',I:'111010010010111',
+ L:'100100100100111',M:'1000111011101011000110001',N:'110101101101101',O:'010101101101010',P:'110101110100100',R:'110101110101101',
+ C:'011100100100011',S:'011100010001110',T:'111010010010010',U:'101101101101111',H:'101101111101101',W:'1000110001101011010101010',' ':'000000000000000'};
+function txt(s,x,y,c){for(const ch of s){const f=F3[ch];if(!f)continue;const w=f.length/5;for(let k=0;k<f.length;k++)if(f[k]==='1')px(x+k%w,y+(k/w|0),1,1,c);x+=w+1}}
+// maze (1 wall, 0 floor); S=(1,1) G=(1,7); uncertain wall at (1,4)
+const M=['111111111','100000001','101111101','101010101','100010001','111010111','100000001','101101101','111111111'];
+const OX=6,OY=10,TS=8,WR=4,WC=4;
+const S=[4,1],G=[4,7];
+const shortP=[[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7]];
+const legalP=[[4,1],[4,2],[4,3],[5,3],[6,3],[6,4],[6,5],[5,5],[4,5],[4,6],[4,7]];
+const cl=(v,a,b)=>v<a?a:v>b?b:v, ph=(t,a,b)=>cl((t-a)/(b-a),0,1);
+function along(P,u){const n=P.length-1,f=u*n,i=Math.min(n-1,Math.floor(f)),r=f-i;
+ return [OX+(P[i][1]+(P[i+1][1]-P[i][1])*r)*TS, OY+(P[i][0]+(P[i+1][0]-P[i][0])*r)*TS]}
+function trail(P,u,c,dash,t){ // pixel line through tile centres up to progress u
+ const n=P.length-1,steps=Math.round(u*n*TS);
+ for(let k=0;k<=steps;k++){const f=k/TS,i=Math.min(n-1,Math.floor(f)),r=f-i;
+  const x=OX+(P[i][1]+(P[i+1][1]-P[i][1])*r)*TS+3,y=OY+(P[i][0]+(P[i+1][0]-P[i][0])*r)*TS+3;
+  if(!dash||((k>>1)&1)===0)px(x,y,2,2,c)}}
+const ROB=['..a...','.bbbb.','.bnbn.','.bbbb.','bbbbbb','.m..m.'];
+function robot(x,y,a){const cm={a:C.acc,b:C.bone,n:C.night,m:C.muted};
+ for(let j=0;j<6;j++)for(let i=0;i<6;i++){const k=ROB[j][i];if(k!=='.')dith(x+1+i,y+1+j,1,1,cm[k],a)}}
+const STAR=['..s..','.sss.','sssss','.sss.','.s.s.'];
+function star(x,y,c){for(let j=0;j<5;j++)for(let i=0;i<5;i++)if(STAR[j][i]==='s')px(x+1+i,y+1+j,1,1,c)}
+const X5=['x...x','.x.x.','..x..','.x.x.','x...x'],CK=['.....c','....cc','c..cc.','cccc..','.cc...'];
+function glyph(G,x,y,c){for(let j=0;j<G.length;j++)for(let i=0;i<G[j].length;i++)if(G[j][i]!=='.')px(x+i,y+j,1,1,c)}
+function wallTile(x,y){px(x,y,TS,TS,C.wall);px(x,y,TS,1,C.wallTop);px(x,y+TS-1,TS,1,C.wallSh)}
+function frame(t){
+ px(0,0,W,H,C.night);
+ const heat=1-ph(t,4.4,5.4), rebuild=ph(t,4.4,5.2);
+ // floor + walls
+ for(let r=0;r<9;r++)for(let c=0;c<9;c++){const x=OX+c*TS,y=OY+r*TS;
+  if(M[r][c]==='1'){
+   if(r===WR&&c===WC){ // the wall the model got wrong
+    px(x,y,TS,TS,C.floor);
+    const solid=Math.round(rebuild*TS); // rebuild top to bottom
+    for(let j=0;j<TS;j++){const jit=(t<4.4&&((t*10|0)+j)%5===0)?1:0;
+     if(j<solid){g.fillStyle=j===0?C.wallTop:j===TS-1?C.wallSh:C.wall;g.fillRect(x,y+j,TS,1)}
+     else dith(x+jit,y+j,TS-jit,1,C.wall,.35)}
+    if(rebuild>0&&rebuild<1)px(x,y+solid,TS,1,C.soft);
+   } else wallTile(x,y);
+  } else {px(x,y,TS,TS,C.floor);px(x+3,y+3,1,1,C.dot)}}
+ // epistemic-uncertainty glow around the wrong wall
+ if(heat>0){const pulse=.75+.25*Math.sin(t*6);
+  dith(OX+(WC-1)*TS,OY+WR*TS,TS*3,TS,C.heat,.38*heat*pulse);
+  dith(OX+WC*TS,OY+WR*TS,TS,TS,C.acc,.32*heat*pulse);
+  dith(OX+WC*TS,OY+(WR-1)*TS,TS,TS,C.heat,.25*heat*pulse);
+  dith(OX+WC*TS,OY+(WR+1)*TS,TS,TS,C.heat,.25*heat*pulse)}
+ // goal
+ const flash=(t>2.4&&t<2.9)?((t*12|0)%2?C.acc:C.soft):C.soft;
+ star(OX+G[1]*TS,OY+G[0]*TS,t>7.35&&t<7.6&&((t*12|0)%2)?C.bone:flash);
+ // shortcut trail (orange) — drawn 0.6..2.4, erased 4.4..4.8
+ const su=ph(t,.6,2.4), sErase=ph(t,4.4,4.8);
+ if(su>0&&sErase<1){g.save();g.globalAlpha=1;trail(shortP,su,C.acc,false,t);g.restore();
+  if(sErase>0)dith(OX+TS,OY+WR*TS+3,TS*6,2,C.floor,sErase);}
+ // sparks while clipping through the wall
+ if(t>1.3&&t<1.9){for(let k=0;k<5;k++){const a=k*1.3+t*20;px(OX+WC*TS+3+Math.round(Math.cos(a)*4),OY+WR*TS+3+Math.round(Math.sin(a)*4),1,1,k%2?C.soft:C.acc)}}
+ // legal trail (bone, dotted while proposed, solid while followed)
+ const lu=ph(t,2.8,3.6);
+ if(lu>0&&t<5.2)trail(legalP,lu,C.bone,true,t);
+ if(t>=5.2)trail(legalP,ph(t,5.2,7.4),C.bone,false,t);
+ // red X on the clipped wall during the judgement
+ if(t>3.6&&t<4.6)glyph(X5,OX+WC*TS+1,OY+WR*TS+1,C.red);
+ // robot
+ let rp=null;
+ if(t<.6)rp=[OX+S[1]*TS,OY+S[0]*TS];
+ else if(t<2.4)rp=along(shortP,ph(t,.6,2.4));
+ else if(t<2.9)rp=[OX+G[1]*TS,OY+G[0]*TS];
+ else if(t<5.2)rp=[OX+S[1]*TS,OY+S[0]*TS];
+ else rp=along(legalP,ph(t,5.2,7.4));
+ const ra=(t>2.85&&t<3.05)?((t*30|0)%2):1;
+ robot(Math.round(rp[0]),Math.round(rp[1]),ra);
+ // right panel: human labeller + preference bubble
+ const hx=100;
+ px(hx-3,62,7,7,C.text);px(hx-2,61,5,1,C.text);px(hx-2,69,5,1,C.text); // head
+ px(hx-7,72,15,6,C.text);px(hx-5,71,11,1,C.text);px(hx-8,74,17,4,C.text); // shoulders
+ const bub=ph(t,3.0,3.15)*(1-ph(t,4.9,5.05));
+ if(bub>0){const bx=82,by=14,bw=34,bh=40;
+  dith(bx,by,bw,bh,C.panel,bub);
+  if(bub>.5){px(bx,by,bw,1,C.muted);px(bx,by+bh-1,bw,1,C.muted);px(bx,by,1,bh,C.muted);px(bx+bw-1,by,1,bh,C.muted);
+   px(hx-1,by+bh,3,2,C.muted);px(hx,by+bh+2,1,3,C.muted);
+   // row A: straight through the wall (orange)
+   px(86,22,2,2,C.text);px(93,18,3,9,C.wall);px(93,18,3,1,C.wallTop);
+   for(let x=88;x<101;x++)px(x,22,1,2,C.acc);star(99,19,C.soft);
+   // row B: around the wall (bone)
+   px(86,36,2,2,C.text);px(93,32,3,9,C.wall);px(93,32,3,1,C.wallTop);
+   px(88,36,3,2,C.bone);px(90,36,2,7,C.bone);px(90,42,7,2,C.bone);px(96,36,2,8,C.bone);px(96,36,4,2,C.bone);star(99,33,C.soft);
+   if(t>3.6)glyph(X5,107,20,C.red);
+   if(t>3.9)glyph(CK,107,34,C.green);
+   if(t>3.9&&t<4.4&&((t*8|0)%2))px(84,30,30,1,C.hi);
+  }}
+ // stage label
+ const lab=t<2.9?'IMAGINED ROLLOUT':t<4.4?'WHICH IS REALISTIC':t<5.2?'FINETUNING':'REPAIRED MODEL';
+ txt(lab,OX,3,t<2.9?C.muted:t<4.4?C.soft:C.text);
+ // loop fade
+ const fade=Math.max(1-ph(t,0,.35),ph(t,7.6,8));
+ if(fade>0)dith(0,0,W,H,C.night,fade);
+}
+function resize(){const d=window.devicePixelRatio||1;let cw=innerWidth,ch=cw*3/4;if(ch>innerHeight){ch=innerHeight;cw=ch*4/3}
+ cv.style.width=cw+'px';cv.style.height=ch+'px';cv.width=Math.round(cw*d);cv.height=Math.round(ch*d)}
+function blit(){ctx.imageSmoothingEnabled=false;ctx.fillStyle=C.night;ctx.fillRect(0,0,cv.width,cv.height);
+ let s=cv.width/W;const si=Math.floor(s);if(si>=1&&si*W>=cv.width*.92)s=si;
+ const dw=Math.round(W*s),dh=Math.round(H*s);ctx.drawImage(off,(cv.width-dw)>>1,(cv.height-dh)>>1,dw,dh)}
+resize();addEventListener('resize',()=>{resize();if(still){frame(ST);blit()}});
+const ht=/t=([\d.]+)/.exec(location.hash),still=!!ht||matchMedia('(prefers-reduced-motion: reduce)').matches,ST=ht?+ht[1]:3.95;
+if(still){frame(ST);blit();return}
+let t0=null,last=-1e9;
+function loop(now){requestAnimationFrame(loop);if(now-last<15)return;last=now;if(t0===null)t0=now;
+ frame(((now-t0)/1000+.4)%T);blit()}
+requestAnimationFrame(loop);
+})();
+</script></body></html>

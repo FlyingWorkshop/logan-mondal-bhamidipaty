@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demand, debiased</title>
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head><body>
+<canvas id="c" role="img" aria-label="Double machine learning for demand, on synthetic data: three household types each sit at a different price and quantity level, so a naive line through them slopes the wrong way. A scan subtracts what household attributes predict about price and quantity, the groups collapse onto each other, and the fitted demand line flips to slope downward."></canvas>
+<script>
+/* Illustration only, on synthetic points generated below; no data or results from the paper.
+   The paper: household attributes X confound price p and quantity q, so a naive regression of q on p
+   is biased; it residualizes (p,q) against X with cross-fit random forests, then estimates demand on
+   the residuals. Here: three household types shift (p,q) up together; within a type, demand slopes down. */
+const W=120,H=90,T=8000;
+const C={night:[22,18,31],panel:[30,24,41],hi:[44,36,60],grid:[37,30,50],bone:[238,231,218],muted:[142,135,154],dim:[74,64,92],acc:[242,162,92],soft:[248,211,160],lil:[160,139,208],sage:[122,184,160]};
+const TY=[C.sage,C.soft,C.lil];
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const lo=document.createElement('canvas');lo.width=W;lo.height=H;const lx=lo.getContext('2d');
+const img=lx.createImageData(W,H),D=img.data;
+function px(x,y,c,a){x|=0;y|=0;if(x<0||y<0||x>=W||y>=H)return;const i=(y*W+x)*4;
+  if(a===undefined||a>=1){D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]}else if(a>0){D[i]+=(c[0]-D[i])*a;D[i+1]+=(c[1]-D[i+1])*a;D[i+2]+=(c[2]-D[i+2])*a}}
+function rect(x,y,w,h,c,a){for(let j=0;j<h;j++)for(let i=0;i<w;i++)px(x+i,y+j,c,a)}
+const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+const G={A:'01110100011000111111100011000110001',B:'11110100011000111110100011000111110',D:'11110100011000110001100011000111110',E:'11111100001000011110100001000011111',I:'01110001000010000100001000010001110',N:'10001100011100110101100111000110001',S:'01111100001000001110000010000111110',V:'10001100011000110001100010101000100',P:'11110100011000111110100001000010000',Q:'01110100011000110001101011001001101'};
+function txt(s,x,y,c,a){for(const ch of s){const g=G[ch];if(g)for(let j=0;j<7;j++)for(let i=0;i<5;i++)if(g[j*5+i]==='1')px(x+i,y+j,c,a);x+=6}}
+const cl=v=>v<0?0:v>1?1:v,ss=v=>{v=cl(v);return v*v*(3-2*v)};
+// synthetic households (screen coords; y down, so "q up" = smaller y)
+let sd=5;const rnd=()=>{sd=(sd*1664525+1013904223)>>>0;return sd/4294967296};
+const gau=()=>Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(6.2832*rnd());
+const CEN=[[30,72],[61,53],[92,34]],RC=[61,54],pts=[];
+const cg=()=>Math.max(-1.5,Math.min(1.5,gau()));
+for(let k=0;k<3;k++)for(let n=0;n<6;n++){const dx=9*((n+.5)/6*2-1)+.5*cg(),dy=.85*dx+.9*cg();
+  pts.push({k,x0:CEN[k][0]+dx,y0:CEN[k][1]+dy,x1:RC[0]+1.7*dx+(k-1)*.9,y1:RC[1]+1.7*dy})}
+const ext=(f,m)=>{const v=pts.map(f);return[Math.min(...v)-m,Math.max(...v)+m]},NE=ext(o=>o.x0,5),DE=ext(o=>o.x1,12);
+function ols(f){let n=pts.length,mx=0,my=0;pts.forEach(o=>{const[a,b]=f(o);mx+=a/n;my+=b/n});let sxy=0,sxx=0;pts.forEach(o=>{const[a,b]=f(o);sxy+=(a-mx)*(b-my);sxx+=(a-mx)**2});const b=sxy/sxx;return[my-b*mx,b]}
+const NV=ols(o=>[o.x0,o.y0]),DB=ols(o=>[o.x1,o.y1]);
+const PX0=5,PY0=17,PX1=115,PY1=86;
+function line(f,c,x0,x1,th,dash,a){const S=new Set();for(let x=x0;x<=x1;x+=.25){if(dash&&((x|0)%6)>2)continue;const y=f[0]+f[1]*x;if(y<PY0+2||y>PY1-3)continue;const X=(x-th/2+.5)|0,Y=(y-th/2+.5)|0;for(let j=0;j<th;j++)for(let i=0;i<th;i++)S.add((Y+j)*W+X+i)}S.forEach(k=>px(k%W,k/W|0,c,a))}
+function dot(x,y,c,lit){x=Math.round(x);y=Math.round(y);rect(x-1,y-1,3,3,lit?C.bone:c);px(x-1,y-1,mix(c,C.bone,.6));px(x+1,y+1,mix(c,C.night,.35))}
+function frame(ms){
+  const ph=((ms%T)+T)%T/T;
+  for(let k=0;k<D.length;k+=4){D[k]=22;D[k+1]=18;D[k+2]=31;D[k+3]=255}
+  // panel + faint grid + axes
+  rect(PX0,PY0,PX1-PX0,PY1-PY0,C.panel);rect(PX0,PY0,PX1-PX0,1,C.hi);
+  for(let y=PY0+8;y<PY1-4;y+=10)for(let x=PX0+6;x<PX1-2;x+=4)px(x,y,C.grid);
+  rect(PX0+3,PY1-4,PX1-PX0-6,1,C.dim);rect(PX0+3,PY0+3,1,PY1-PY0-6,C.dim);
+  txt('P',PX1-9,PY1-13,C.muted);txt('Q',PX0+6,PY0+4,C.muted);
+  // clock: raw hold | scan & partial out | fit | hold | return
+  const scan=(ph-.26)/.24, bx=PX0+2+scan*(PX1-PX0+8), back=ss((ph-.88)/.1);
+  const fit=ss((ph-.5)/.1), after=ph>=.5&&ph<.92;
+  // naive fit: full while raw, fades during scan, ghosted (dashed) while debiased, back at loop end
+  const nvA=ph<.26?1:ph<.5?1-ss((ph-.3)/.16):back;
+  if(nvA>0)line(NV,C.muted,NE[0],NE[1],2,false,nvA);
+  if(ph>.5&&ph<.98)line(NV,C.dim,NE[0],NE[1],1,true,ss((ph-.52)/.06)*(1-ss((ph-.86)/.06)));
+  // debiased fit draws in left to right, glow pulse on completion
+  if(ph>.5&&ph<.94){const a=1-ss((ph-.86)/.06),x1=DE[0]+fit*(DE[1]-DE[0]),g=Math.max(0,1-Math.abs(ph-.61)/.05);
+    if(g>0)line(DB,C.soft,DE[0],x1,6,false,.22*g*a);
+    line(DB,C.acc,DE[0],x1,2,false,a);}
+  // scan beam
+  if(scan>0&&scan<1){for(let i=0;i<10;i++)rect(bx-i,PY0+1,1,PY1-PY0-1,C.bone,i?.18*(1-i/10):.9)}
+  // households
+  pts.forEach(o=>{const m=ss((bx-o.x0)/9)*(1-back),mm=ph<.26?0:m;
+    const x=o.x0+(o.x1-o.x0)*mm,y=o.y0+(o.y1-o.y0)*mm,lit=scan>0&&scan<1&&Math.abs(bx-o.x0)<2;
+    dot(x,y,mix(TY[o.k],C.bone,.7*4*mm*(1-mm)),lit)});
+  // header word: NAIVE -> DEBIASED
+  const hw=after?'DEBIASED':'NAIVE',hc=after?C.acc:C.muted;
+  const ha=after?ss((ph-.5)/.04)*(1-ss((ph-.88)/.04)):(ph<.5?1-ss((ph-.46)/.04):ss((ph-.92)/.04));
+  txt(hw,6,5,hc,ha);
+  lx.putImageData(img,0,0);
+  const w=cv.width,h=cv.height,s=Math.max(1,Math.floor(Math.min(w/W,h/H)));
+  ctx.fillStyle='#16121F';ctx.fillRect(0,0,w,h);ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(lo,((w-W*s)/2)|0,((h-H*s)/2)|0,W*s,H*s);
+}
+function size(){const d=window.devicePixelRatio||1;cv.width=Math.round(innerWidth*d);cv.height=Math.round(innerHeight*d)}
+const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fixT=()=>{const m=/[#&]t=([\d.]+)/.exec(location.hash);return m?+m[1]*1000:null};
+let last=T*.74,prev=-1e9,fixed=fixT();
+size();addEventListener('resize',()=>{size();frame(fixed!==null?fixed:last)});
+addEventListener('hashchange',()=>{fixed=fixT();if(fixed!==null)frame(fixed)});
+if(fixed!==null)frame(fixed);else if(still)frame(last);
+else{const loop=n=>{if(fixed===null&&n-prev>=16){prev=n;last=n;frame(n)}requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+</script></body></html>

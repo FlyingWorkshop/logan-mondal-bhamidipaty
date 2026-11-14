@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reward hack, repaired</title>
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head><body><canvas id="c" role="img" aria-label="Pixel animation of the paper's Traffic Control task. Top, hacked: rewarded for mean velocity, an autonomous car stops in the on-ramp mouth so highway traffic keeps full speed and the ramp queue never merges. Bottom, repaired: with the corrected reward the ramp cars merge onto the highway."></canvas>
+<script>
+(()=>{
+/* Traffic Control (FLOW merge, Wu et al. 2021) as used in PBRR (Hatgis-Kessell, Bhamidipaty, Brunskill 2025).
+   Proxy reward = mean velocity -> AVs block the on-ramp. Repaired reward -> ramp cars merge. Schematic. */
+const L=8,BH=56,BW=76;
+const C={night:'#16121F',panel:'#1E1829',road:'#2A2238',edge:'#4A4060',
+bone:'#EEE7DA',text:'#C9C2B8',muted:'#8E879A',acc:'#F2A25C',soft:'#F8D3A0',
+red:'#E0584F',redd:'#6A2A33',green:'#7FC48A',greend:'#2C5238',dark:'#0C0A12',glass:'#3A3150'};
+const F={A:['.###.','#...#','#...#','#####','#...#','#...#','#...#'],C:['.####','#....','#....','#....','#....','#....','.####'],
+D:['####.','#...#','#...#','#...#','#...#','#...#','####.'],E:['#####','#....','#....','####.','#....','#....','#####'],
+H:['#...#','#...#','#...#','#####','#...#','#...#','#...#'],I:['###','.#.','.#.','.#.','.#.','.#.','###'],
+K:['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#'],P:['####.','#...#','#...#','####.','#....','#....','#....'],
+R:['####.','#...#','#...#','####.','#.#..','#..#.','#...#']};
+const off=document.createElement('canvas'),g=off.getContext('2d');
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let W=80,H=60,K=1,oy=2,mx=42,P=104;
+const px=(x,y,w,h,c)=>{if(w>0&&h>0){g.fillStyle=c;g.fillRect(x|0,y|0,w,h)}};
+function txt(s,x,y,c,sh){for(const ch of s){const f=F[ch];
+  f.forEach((r,j)=>{for(let i=0;i<r.length;i++)if(r[i]==='#'){px(x+i,y+j+1,1,1,sh);}});
+  f.forEach((r,j)=>{for(let i=0;i<r.length;i++)if(r[i]==='#')px(x+i,y+j,1,1,c)});x+=f[0].length+1}}
+function hash(x,y){let h=x*374761393+y*668265263;h=(h^(h>>13))*1274126177;return (h^(h>>16))>>>0}
+/* car: 12 wide x 5 tall, facing right */
+function car(x,y,body,o){
+  x=Math.round(x);y=Math.round(y);o=o||{};
+  px(x+4,y,5,1,body);
+  px(x+3,y+1,7,1,body);px(x+4,y+1,2,1,C.glass);px(x+7,y+1,2,1,C.glass);
+  px(x+1,y+2,10,1,body);px(x,y+3,12,1,o.shade||body);
+  px(x+11,y+3,1,1,o.head||C.soft);px(x+10,y+2,1,1,o.head||C.soft);px(x,y+3,1,1,o.tail||C.redd);px(x+1,y+2,1,1,o.tail||C.redd);
+  px(x+2,y+4,2,1,C.dark);px(x+8,y+4,2,1,C.dark);
+  if(o.av)px(x+5,y-1,2,1,o.av);             // roof sensor marks an autonomous vehicle
+}
+function streak(x,y,len,c){for(let i=0;i<len;i++)if(i%4!==3)px(x-2-i,y,1,1,c)}
+const wrap=(o,n,t)=>((o*P+n*P*t/L)%P+P)%P-14;
+/* ramp geometry: car top row 21 on the ramp, row 10 on the highway */
+const D=22;
+const kx=x=>x<mx?0:Math.min(1,(x-mx)/D);
+const lane=x=>Math.round(21-11*kx(x));
+function scene(ya,y1,y0,tint,bg){
+  px(0,ya,W,y1-ya,bg);
+  for(let y=ya;y<y1;y++)for(let x=0;x<W;x++){const v=hash(x,y-oy)%29;if(v===0)px(x,y,1,1,C.panel);else if(v===1)px(x,y,1,1,tint)}
+  px(0,y0+8,W,1,C.edge);px(0,y0+9,W,7,C.road);px(0,y0+16,W,1,C.edge);
+  for(let x=0;x<W;x++){
+    const k=kx(x),top=Math.round(19-3*k*2.2),bot=Math.round(26-10*k);
+    if(bot<=16)break;
+    if(top>16){px(x,y0+top,1,1,C.edge);px(x,y0+top+1,1,bot-top-1,C.road);}
+    else{px(x,y0+16,1,bot-16,C.road);if(x%3===0)px(x,y0+16,1,1,C.edge);}
+    px(x,y0+bot,1,1,C.edge);
+  }
+}
+function frame(t){
+  px(0,0,W,H,C.night);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(hash(x,y-oy)%29===0)px(x,y,1,1,C.panel);
+  /* ---------- top: proxy reward (mean velocity) -> hack ---------- */
+  let y0=oy;
+  scene(0,oy+28,y0,C.redd,'#20141F');
+  const blink=(t*4|0)%2===0;
+  [0,.5].forEach(o=>{const x=wrap(o,3,t);streak(x,y0+11,10,C.muted);streak(x,y0+13,6,C.edge);car(x,y0+10,C.bone)});
+  for(let i=1;i<6;i++){const qx=mx-i*14;if(qx<-13)break;
+    const jig=((t*1.5+i*0.29)%1)<0.1?1:0;
+    car(qx+jig,y0+21,i===2?C.acc:C.text,{tail:C.red,av:i===2?C.bone:null});}
+  const ph=(t*2)%1,r=1+Math.floor(ph*2);
+  {const c=ph<0.5?C.red:C.redd;
+    px(mx-r,y0+20-r,12+2*r,1,c);px(mx-r,y0+25+r,12+2*r,1,c);px(mx-r,y0+20-r,1,6+2*r,c);px(mx+11+r,y0+20-r,1,6+2*r,c);}
+  car(mx,y0+21,C.acc,{av:blink?C.red:C.bone,head:blink?C.red:C.soft,tail:blink?C.red:C.redd});
+  txt('HACKED',2,y0,C.red,C.redd);
+  /* ---------- bottom: repaired reward -> merge ---------- */
+  y0=oy+28;
+  scene(y0,H,y0,C.greend,'#131B1D');
+  // highway and ramp share a speed; ramp cars slot into the gaps
+  const rc=[1/6,.5,5/6].map(o=>wrap(o,2,t));
+  rc.forEach(x=>{if(x>=mx-8&&x<mx+D)streak(x,y0+lane(x)+2,4,C.green)});
+  [0,1/3,2/3].forEach(o=>car(wrap(o,2,t),y0+10,C.text));
+  rc.forEach((x,i)=>car(x,y0+lane(x),i===1?C.text:C.acc,{av:i===1?null:C.bone}));
+  txt('REPAIRED',2,y0,C.green,C.greend);
+}
+function resize(){
+  const d=window.devicePixelRatio||1,vw=innerWidth,vh=innerHeight;
+  cv.width=Math.round(vw*d);cv.height=Math.round(vh*d);cv.style.width=vw+'px';cv.style.height=vh+'px';
+  K=Math.max(1,Math.floor(Math.min(cv.height/BH,cv.width/BW)));
+  W=Math.ceil(cv.width/K);H=Math.ceil(cv.height/K);off.width=W;off.height=H;
+  oy=(H-BH)>>1;mx=(W>>1)+2;P=W+28;
+}
+function blit(){ctx.imageSmoothingEnabled=false;ctx.drawImage(off,(cv.width-W*K)>>1,(cv.height-H*K)>>1,W*K,H*K)}
+const still=matchMedia('(prefers-reduced-motion: reduce)');
+const fixed=()=>{const m=/t=([\d.]+)/.exec(location.hash);return m?parseFloat(m[1])%L:null};
+const STILL_T=1.6;
+let last=-1e9,raf=0;
+function loop(now){raf=requestAnimationFrame(loop);if(now-last<15.5)return;last=now;frame((now/1000)%L);blit()}
+function draw(){
+  if(raf){cancelAnimationFrame(raf);raf=0}
+  const ft=fixed();
+  if(ft!==null||still.matches){frame(ft??STILL_T);blit();return}
+  raf=requestAnimationFrame(loop);
+}
+addEventListener('resize',()=>{resize();const ft=fixed();frame(ft??(still.matches?STILL_T:(performance.now()/1000)%L));blit()});
+addEventListener('hashchange',draw);
+still.addEventListener&&still.addEventListener('change',draw);
+resize();frame(fixed()??STILL_T);blit();draw();
+})();
+</script></body></html>

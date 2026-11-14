@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Corridor belief</title>
+<!-- CompressedBeliefMDPs.jl (JOSS 10.21105/joss.07346), illustrated with the classic corridor-localisation toy:
+     a robot in a corridor with three unevenly spaced doors does not know which cell it is in. Under it, its belief
+     (a histogram over corridor cells) is updated by a hand-written Bayes filter: sensing a door gives one peak per
+     door; moving shifts and blurs the peaks; sensing the second door leaves one peak. The histogram drains through a
+     narrow slot into two values, drawn as two meters (the compressed belief) and comes back out as a smooth curve (the decoded belief).
+     The two values and the smoothing are an illustration of the method, not output of the package. -->
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block;image-rendering:pixelated}
+</style></head><body><canvas id="c" role="img" aria-label="Pixel-art robot in a corridor with doors; under it a bar chart of where it thinks it is, with a peak at every door until a second door leaves one peak. The bars drain through a slot into two meter bars and come back out as a smooth curve."></canvas><script>
+(function(){
+var W=120,H=90,LOOP=8,WT8=Math.PI*2/8;
+var NIGHT="#16121F",PANEL="#1E1829",PHI="#2A2238",PHI2="#3A3150",MID="#4A4160",OUT="#0D0A14",
+    BONE="#EEE7DA",TEXT="#C9C2B8",MUTED="#8E879A",ACC="#F2A25C",ACCS="#F8D3A0",ACCD="#C9803F",ACCX="#8A5530",
+    TEAL="#6EC6B8",TEALL="#C4EEE6",TEALD="#2F5E5C";
+var art=document.createElement("canvas");art.width=W;art.height=H;var g=art.getContext("2d");
+var cv=document.getElementById("c"),ctx=cv.getContext("2d"),S=1,ox=0,oy=0;
+function fit(){var d=window.devicePixelRatio||1;cv.width=Math.round(innerWidth*d);cv.height=Math.round(innerHeight*d);
+  var s=Math.min(cv.width/W,cv.height/H),si=Math.floor(s);if(si>=1&&si/s>=0.8)s=si;S=s;
+  ox=Math.round((cv.width-W*s)/2);oy=Math.round((cv.height-H*s)/2);}
+function R(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);}
+function P(x,y,c){R(x,y,1,1,c);}
+function cl(x){return x<0?0:x>1?1:x}
+function ez(u){u=cl(u);return u*u*(3-2*u);}
+function seg(t,a,b){return cl((t-a)/(b-a));}
+function rnd(i){var s=Math.sin(i*12.9898+78.233)*43758.5453;return s-Math.floor(s);}
+function lerp(a,b,u){return a+(b-a)*u;}
+
+/* ---------- corridor geometry ---------- */
+var NC=26,CW=4,X0=8;                 /* 26 cells, 4 art px each */
+var DOORS=[4,9,19];                  /* unevenly spaced doors */
+function cx(i){return X0+i*CW+1.5;}
+var WT=3,WB=22,FB=28;                /* wall top, wall bottom (floor line), floor bottom */
+var HB=59,HMAX=28;                   /* histogram baseline, max bar height */
+var NX=60,NY=68;                     /* neck of the slot */
+var BX=31,BY=72,BW=58,BH=16;         /* number box */
+
+/* ---------- belief (hand-written Bayes filter, as keyframes) ---------- */
+function mix(ms,ss,ws,floor){var b=[],s=0;for(var i=0;i<NC;i++){var v=floor;
+  for(var k=0;k<ms.length;k++){var d=(i-ms[k])/ss[k];v+=ws[k]*Math.exp(-.5*d*d)/ss[k];}b.push(v);s+=v;}
+  for(i=0;i<NC;i++)b[i]/=s;return b;}
+function blend(a,b,u){var o=[];for(var i=0;i<NC;i++)o.push(lerp(a[i],b[i],u));return o;}
+var U=mix([],[],[],1);
+var B1=mix(DOORS,[.8,.8,.8],[1,1,1],.004);
+function moved(u){return mix([4+5*u,9+5*u,19+5*u],[.8+.8*u,.8+.8*u,.8+.8*u],[1,1,1],.004);}
+var B2=mix([9,14,24],[.8,1.4,1.4],[.92,.04,.04],.002);
+function pos(t){
+  if(t<.5)return 1; if(t<1.6)return lerp(1,4,ez(seg(t,.5,1.6)));
+  if(t<2.6)return 4; if(t<3.8)return lerp(4,9,ez(seg(t,2.6,3.8)));
+  if(t<6.2)return 9; if(t<7.6)return lerp(9,1,ez(seg(t,6.2,7.6))); return 1;}
+function belief(t){
+  t=((t%LOOP)+LOOP)%LOOP;
+  if(t<1.7)return U;
+  if(t<2.1)return blend(U,B1,ez(seg(t,1.7,2.1)));
+  if(t<2.6)return B1;
+  if(t<3.9)return moved(ez(seg(t,2.6,3.8)));
+  if(t<4.3)return blend(moved(1),B2,ez(seg(t,3.9,4.3)));
+  if(t<6.2)return B2;
+  if(t<7.6){var u=ez(seg(t,6.2,7.6));return blend(mix([9-8*u],[.8+5*u],[1],.002),U,u);}
+  return U;}
+function sc(b){return Math.pow(cl(b/.3),.6);}
+function hgt(b){return Math.max(1,Math.round(HMAX*sc(b)));}
+function decode(b){ /* smooth curve: Gaussian-smoothed belief, sampled per art pixel */
+  var o=[];for(var x=0;x<NC*CW;x++){var c=(x-1.5)/CW,v=0,s=0;
+    for(var i=0;i<NC;i++){var d=(i-c)/.9,k=Math.exp(-.5*d*d);v+=k*b[i];s+=k;}o.push(v/s);}return o;}
+
+/* ---------- 3x5 digits ---------- */
+var DG=["111101101101111","010110010010111","111001111100111","111001111001111","101101111001001",
+        "111100111001111","111100111101111","111001001010010","111101111101111","111101111001111"];
+function digit(n,x,y,s,c){var p=DG[n];for(var j=0;j<5;j++)for(var i=0;i<3;i++)if(p[j*3+i]==="1")R(x+i*s,y+j*s,s,s,c);}
+function num(v,x,y,glow){var a=Math.floor(v),b=Math.floor((v-a)*10+1e-6);a=Math.min(9,a);
+  var cs=[[a,x],[b,x+11]];
+  for(var k=0;k<2;k++){digit(cs[k][0],cs[k][1]+1,y+1,2,TEALD);}
+  R(x+9,y+9,2,2,TEALD);
+  for(k=0;k<2;k++){digit(cs[k][0],cs[k][1],y,2,glow?TEALL:TEAL);}
+  R(x+8,y+8,2,2,glow?TEALL:TEAL);}
+
+/* ---------- scene ---------- */
+function corridor(t){
+  R(0,WT-1,W,1,MID);R(0,WT,W,WB-WT,PHI);
+  for(var y=WT+3;y<WB;y+=4){R(0,y,W,1,PHI2);for(var x=((y>>2)&1)*5;x<W;x+=10)P(x,y-3,PHI2),P(x,y-2,PHI2),P(x,y-1,PHI2);}
+  R(0,WB,W,1,MUTED);R(0,WB+1,W,FB-WB-1,MID);for(x=0;x<W;x+=6)P(x+((x/6)&1)*3,WB+3,PHI2);
+  R(0,FB,W,1,OUT);
+  for(var k=0;k<3;k++){var c=Math.round(cx(DOORS[k])),dx=c-4,top=WT+4;
+    var fl=0;[1.65,3.85].forEach(function(ts){var a=t-ts;if(a>=0&&a<.6&&Math.abs(pos(ts)-DOORS[k])<.1)fl=1-a/.6;});
+    R(dx-1,top-1,11,WB-top+1,OUT);R(dx,top,9,WB-top,fl>.3?ACCS:ACCD);R(dx+1,top+1,7,WB-top-1,fl>.3?ACC:ACCX);
+    R(dx+1,top+1,7,1,fl>.3?ACCS:ACCD);R(dx+4,top+1,1,WB-top-1,fl>.3?ACCS:ACCD);P(dx+6,top+9,ACCS);
+    if(fl>.5){for(var i=0;i<4;i++){var a=i*1.57+t*6;P(c+Math.round(Math.cos(a)*7),top+7+Math.round(Math.sin(a)*8),ACCS);}}}
+}
+function robot(t){
+  var p=pos(t),x=Math.round(cx(p))-4,moving=(t>.5&&t<1.6)||(t>2.6&&t<3.8)||(t>6.2&&t<7.6);
+  var bob=moving&&(Math.floor(t*10)&1)?1:0,y=FB-12-bob;
+  /* wheels */
+  R(x,FB-3,9,3,OUT);var sp=Math.floor(t*12)&1;R(x+1,FB-2,3,1,sp&&moving?MUTED:TEXT);R(x+5,FB-2,3,1,sp&&moving?TEXT:MUTED);
+  /* body */
+  R(x,y+3,9,7,OUT);R(x+1,y+4,7,5,BONE);R(x+1,y+8,7,1,TEXT);R(x+3,y+6,3,1,MUTED);
+  /* head */
+  R(x+1,y-2,7,6,OUT);R(x+2,y-1,5,4,BONE);R(x+2,y,5,2,TEALD);
+  var dir=(t>6.2&&t<7.6)?-1:1,blink=(t%(8/3))<.1;
+  if(!blink){var ex=dir>0?4:2;P(x+ex,y,TEALL);P(x+ex+2,y,TEALL);P(x+ex,y+1,TEAL);P(x+ex+2,y+1,TEAL);}
+  /* antenna */
+  R(x+4,y-4,1,2,OUT);var ping=[1.65,3.85].some(function(s){return t>=s&&t<s+.5;});P(x+4,y-5,ping?ACCS:ACC);
+  /* sense arcs */
+  [1.65,3.85].forEach(function(s){var a=t-s;if(a<0||a>.5)return;var r=2+Math.floor(a*14);
+    for(var q=0;q<9;q++){var an=-Math.PI*(.15+.7*q/8);P(x+4+Math.round(Math.cos(an)*r),y-5+Math.round(Math.sin(an)*r*.8),a<.3?TEALL:TEAL);}});
+  /* question mark while unsure */
+  if(t<3.85||t>7.0){var qx=x+10,qy=y-8,QP=[[0,0],[1,0],[2,0],[3,1],[2,2],[1,3],[1,5]];
+    /* dark outline so the "?" reads over the doors */
+    QP.forEach(function(p){for(var oy2=-1;oy2<=1;oy2++)for(var ox2=-1;ox2<=1;ox2++)P(qx+p[0]+ox2,qy+p[1]+oy2,OUT);});
+    QP.forEach(function(p){P(qx+p[0],qy+p[1],BONE);});}
+}
+function hopper(){
+  /* funnel from histogram width down to a narrow neck */
+  for(var y=HB+2;y<=NY;y++){var u=(y-HB-2)/(NY-HB-2),l=Math.round(lerp(X0,NX-4,ez(u*1.05))),r=Math.round(lerp(X0+NC*CW,NX+4,ez(u*1.05)));
+    for(var x=l;x<r;x++)if(((x+y)&1)===0)P(x,y,PANEL);P(l,y,PHI2);P(r,y,PHI2);}
+  R(NX-4,NY,8,BY-NY,PANEL);R(NX-5,NY,1,BY-NY,PHI2);R(NX+4,NY,1,BY-NY,PHI2);
+  R(BX-1,BY-1,BW+2,BH+2,PHI2);R(BX,BY,BW,BH,PANEL);R(BX,BY,BW,1,PHI);
+}
+function flow(t,b){
+  /* amber grains drain from the bars into the slot; teal grains rise back out to the curve */
+  for(var i=0;i<34;i++){var u=((t*.75+rnd(i))%1),c=Math.floor(rnd(i+50)*NC);
+    if(hgt(b[c])<4)continue;
+    var x0=cx(c),y0=HB+2,v=ez(u),x=lerp(x0,NX-.5+(rnd(i+9)-.5)*3,v),y=lerp(y0,BY+3,u*u);
+    if(y>BY+2)continue;P(x,y,u<.5?ACC:ACCS);}
+  var d=decode(b);
+  for(i=0;i<22;i++){u=((t*.625+rnd(i+200))%1);c=Math.floor(rnd(i+300)*NC*CW);
+    var hh=Math.round(HMAX*sc(d[c]));if(hh<4)continue;
+    var tx=X0+c,x=lerp(NX-.5,tx,ez(u)),y=lerp(BY,HB+2,Math.sqrt(u));if(u<.08)continue;P(x,y,u>.7?TEALL:TEAL);}
+}
+function histogram(t,b){
+  R(X0-2,HB+1,NC*CW+3,1,MUTED);
+  var pk=0,pi=0;for(var i=0;i<NC;i++)if(b[i]>pk){pk=b[i];pi=i;}
+  if(pk>.3){var gx=Math.round(cx(pi)),gy=HB-HMAX+2,gr=Math.round(3+Math.sin(t*WT8*8));
+    for(var yy0=-gr;yy0<=gr;yy0++)for(var xx0=-gr;xx0<=gr;xx0++){var q=xx0*xx0+yy0*yy0;if(q<=gr*gr&&((xx0+yy0)&1)===0)P(gx+xx0,gy+yy0,q<4?ACCS:ACCX);}
+    for(var k=0;k<4;k++){var an=k*1.5708+t*WT8*2,rr=7+Math.sin(t*WT8*5+k)*1.5;P(gx+Math.round(Math.cos(an)*rr),gy+Math.round(Math.sin(an)*rr*.7),ACCS);}}
+  for(i=0;i<NC;i++){var h=hgt(b[i]),x=X0+i*CW,top=b[i]>pk*.85&&h>8;
+    R(x,HB+1-h,3,h,top?ACC:ACCD);R(x,HB+1-h,3,1,top?ACCS:ACC);}
+  /* decoded smooth curve, a beat behind */
+  var d=decode(b),prev=null;
+  for(var x2=0;x2<NC*CW;x2++){var yy=HB+1-Math.round(HMAX*sc(d[x2]));
+    var X=X0+x2;if(prev!==null){var a=Math.min(prev,yy),bb=Math.max(prev,yy);R(X,a-1,1,bb-a+1,OUT);}
+    R(X,yy-1,1,1,OUT);prev=yy;}
+  prev=null;
+  for(x2=0;x2<NC*CW;x2++){yy=HB+1-Math.round(HMAX*sc(d[x2]));X=X0+x2;
+    if(prev!==null){a=Math.min(prev,yy);bb=Math.max(prev,yy);R(X,a,1,bb-a+1,TEAL);}R(X,yy,1,1,TEAL);prev=yy;}
+}
+function numbers(t,b){
+  /* two illustrative coordinates: where the mass is, and how concentrated it is */
+  var m=0,q=0;for(var i=0;i<NC;i++){m+=i*b[i];q+=b[i]*b[i];}
+  var z1=m/(NC-1)*9.9,z2=Math.min(9.9,9.9*Math.sqrt(q/.32));
+  var glow=Math.sin(t*WT8*6)>.3;
+  /* two plain meters, not digits: the compressed belief is just two values */
+  var zs=[z1,z2];for(var k=0;k<2;k++){var y=BY+3+k*6,w=Math.max(2,Math.round(zs[k]/9.9*(BW-8))),lit=k?!glow:glow;
+    R(BX+4,y,BW-8,4,NIGHT);R(BX+4,y,w,4,lit?TEALL:TEAL);R(BX+4,y+3,w,1,TEALD);}
+}
+
+function draw(t){
+  R(0,0,W,H,NIGHT);
+  corridor(t);
+  var b=belief(t);
+  hopper();flow(t,b);histogram(t,b);numbers(t,b);
+  robot(t);
+}
+function blit(){ctx.imageSmoothingEnabled=false;ctx.fillStyle=NIGHT;ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(art,ox,oy,W*S,H*S);}
+var mq=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)"),last=-1e9,t0=null;
+var HT=/t=([\d.]+)/.exec(location.hash);function still(){draw(HT?(+HT[1])%LOOP:2.35);blit();}
+if(HT)mq={matches:true};
+function frame(now){if(mq&&mq.matches){still();return;}
+  if(t0===null)t0=now;if(now-last>=16){last=now;draw(((now-t0)/1000)%LOOP);blit();}requestAnimationFrame(frame);}
+fit();addEventListener("resize",function(){fit();if(mq&&mq.matches)still();else{draw(0);blit();}});
+addEventListener("hashchange",function(){HT=/t=([\d.]+)/.exec(location.hash);if(HT){mq={matches:true};still();}});
+if(mq&&mq.addEventListener)mq.addEventListener("change",function(){if(!mq.matches)requestAnimationFrame(frame);else still();});
+if(mq&&mq.matches)still();else requestAnimationFrame(frame);
+})();
+</script></body></html>

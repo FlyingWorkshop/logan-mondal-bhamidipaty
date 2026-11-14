@@ -17,9 +17,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Logan Mondal Bhamidipaty</title>
-<meta name="description" content="Logan Mondal Bhamidipaty — AI PhD student at the University of Edinburgh, working on alignment and physical AI: reinforcement learning, robotics, and game theory.">
+<meta name="description" content="Logan Mondal Bhamidipaty — AI PhD student at the University of Edinburgh, research on reward hacking, world-model exploitation, and reward design in reinforcement learning.">
 <meta property="og:title" content="Logan Mondal Bhamidipaty">
-<meta property="og:description" content="AI PhD student at the University of Edinburgh. Alignment and physical AI: reinforcement learning, robotics, game theory.">
+<meta property="og:description" content="AI PhD student at the University of Edinburgh. Research on reward hacking, world-model exploitation, and reward design in reinforcement learning.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#16121F">
 <link rel="icon" href="/assets/images/favicon/favicon.ico" sizes="any">
@@ -63,12 +63,15 @@
   .t-zh{letter-spacing:.04em}
   h1 .t-zh{letter-spacing:.02em}
   body[data-lang="zh"] p.body em{font-style:normal;color:#EDE9DF}
-  body[data-lang="zh"] p.body{line-height:1.95}
+  body[data-lang="zh"] p.body{max-width:none;line-height:1.85}
 
   .wrap{width:100%;max-width:720px;margin:0 auto;padding:0 24px;position:relative}
 
   /* ---------------------------------------------------------------- hero */
-  .hero{position:relative;height:clamp(500px,76vh,680px);overflow:hidden;background:#6283BC;isolation:isolate}
+  /* tall enough for the scene, short enough that the whole bio fits under it on a laptop screen */
+  .hero{position:relative;height:clamp(380px,calc(100vh - 340px),680px);overflow:hidden;background:#6283BC;isolation:isolate}
+  /* narrower windows hang the craft under the name, which needs more room */
+  @media (min-width:641px) and (max-width:1199px){.hero{height:clamp(520px,calc(100vh - 340px),680px)}}
   #scene{position:absolute;bottom:0;left:0;display:block;
     image-rendering:pixelated;image-rendering:crisp-edges;z-index:-1}
   .hero-top{padding-top:clamp(56px,11vh,96px)}
@@ -97,8 +100,10 @@
   .pxbtn[disabled]{cursor:default;opacity:.4}
   .pxbtn[disabled]:hover{background:#2A2140;color:var(--bone)}
   .pxbtn svg{width:14px;height:8px;fill:var(--accent);shape-rendering:crispEdges;transition:fill 1.2s ease}
-  .lang.pxbtn{background:rgba(28,22,48,.42);font-size:11px;padding:6px 10px 7px}
-  .lang.pxbtn:hover{background:rgba(28,22,48,.7)}
+  /* the language switch: solid, larger, with an accent underline so it is found at a glance */
+  .lang.pxbtn{background:rgba(28,22,48,.86);font-size:14px;padding:9px 15px 10px;color:#fff;
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.1),inset 0 -3px 0 var(--accent)}
+  .lang.pxbtn:hover{background:#3A2E58}
   body[data-lang="zh"] .pxbtn .t-zh{font-family:var(--sans);font-weight:400;letter-spacing:.12em}
 
   .alt{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto}
@@ -133,6 +138,11 @@
     background-size:4px 1px;background-repeat:repeat-x;background-position:0 100%;
     transition:color .3s ease}
   a:hover{color:#fff;background-size:4px 2px}
+  /* names in the bio are quiet links, so the one bright phrase is the work */
+  p.body a{color:inherit;background-image:linear-gradient(90deg,var(--muted) 50%,transparent 50%)}
+  p.body a:hover{color:var(--accent-soft);background-image:linear-gradient(90deg,currentColor 50%,transparent 50%)}
+  p.body .hl{color:#F4EEE2}
+  p.body.tag{padding-left:12px;border-left:3px solid var(--accent);transition:border-color 1.2s ease}   /* the interests line, set apart */
   a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
   .links{list-style:none;margin:26px 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
@@ -155,23 +165,46 @@
   section h2::after{content:"";flex:1;height:2px;margin-left:6px;
     background:repeating-linear-gradient(90deg,rgba(238,231,218,.16) 0 2px,transparent 2px 6px)}
   section ul{list-style:none;margin:0;padding:0}
-  section li{display:grid;gap:2px 18px;padding:12px 14px;margin:0 -14px;font-size:15px;color:var(--text);line-height:1.6;
+  /* classic rows: a 4:3 thumbnail at left, the entry's text at right */
+  section li{display:grid;grid-template-columns:184px minmax(0,1fr);grid-template-rows:auto auto auto 1fr;
+    column-gap:20px;align-items:start;padding:14px;margin:0 -14px;font-size:15px;color:var(--text);line-height:1.6;
     clip-path:var(--notch);transition:background .25s ease}
+  section li+li{margin-top:4px}
   section li:hover{background:var(--panel)}
-  @media(min-width:560px){section li{grid-template-columns:62px 1fr}}
   section li[hidden]{display:none}
-  .date{font-family:var(--pix);font-size:11px;letter-spacing:.06em;color:var(--muted);padding-top:3px;white-space:nowrap}
-  /* a year is printed once per run; the repeats stay for screen readers only */
-  .date.again{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-  @media(min-width:560px){.date.again{position:static;width:auto;height:auto;clip-path:none;color:transparent}}
-  .title{color:#F1EBDF;font-weight:400}
+  .thumb{grid-column:1;grid-row:1 / span 4;display:block;position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;
+    background:#120E1A;background-image:none;clip-path:var(--notch);
+    box-shadow:inset 0 0 0 1px rgba(238,231,218,.06)}
+  .thumb:hover{background-size:auto}
+  /* each thumbnail is a 480x360 page, scaled down whole so it keeps its own composition */
+  .thumb iframe{position:absolute;left:0;top:0;width:480px;height:360px;border:0;display:block;
+    transform-origin:0 0;transform:scale(var(--k,.3833));pointer-events:none;background:#16121F}
+  .thumb::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(238,231,218,.08);pointer-events:none;
+    transition:box-shadow .25s ease}
+  li:hover .thumb::after{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
+  .title{grid-column:2;color:#F1EBDF;font-weight:400;font-size:15.5px;line-height:1.45}
+  .title a{color:inherit;background-image:none}
+  .title a:hover{color:#fff}
   .venue{color:var(--muted);font-style:italic}
-  .authors{display:block;font-size:13.5px;line-height:1.55;color:#9C95A6;margin:2px 0 1px}
+  .venue.pub,.venue.pub+.yr{color:#E6DFD2}                  /* accepted venues read first; preprints stay muted */
+  .authors{grid-column:2;display:block;font-size:13.5px;line-height:1.55;color:#9C95A6;margin:4px 0 1px}
   .authors .me{color:#EFE8DC;font-weight:400}
-  .meta{display:block;font-size:13.5px;color:var(--muted)}
+  .meta{grid-column:2;display:block;font-size:13.5px;color:var(--muted)}
   .meta a{font-family:var(--mono);font-size:12.5px}
+  .yr{font-family:var(--pix);font-size:11px;letter-spacing:.06em;color:var(--muted)}
   .new{display:inline-block;margin-left:8px;padding:1px 6px 0;vertical-align:2px;font-family:var(--pix);font-size:9px;letter-spacing:.08em;
     color:var(--night);background:var(--accent);clip-path:var(--notch);transition:background 1.2s ease}
+  @media(max-width:640px){
+    .wrap{padding-left:16px;padding-right:16px}
+    .lang{right:16px}
+    /* phones: a small thumbnail beside the title, the rest of the entry full width under both */
+    section li{grid-template-columns:120px minmax(0,1fr);grid-template-rows:auto;column-gap:12px;padding:10px;margin:0 -10px}
+    .thumb{grid-row:1;align-self:start}
+    .thumb iframe{--k:.25}
+    .title{grid-row:1;align-self:center;font-size:15px;overflow-wrap:anywhere}
+    .authors,.meta{grid-column:1 / -1}
+    .authors{margin-top:8px}
+  }
 
   footer{padding:30px 0 46px;font-family:var(--pix);font-size:10px;letter-spacing:.1em;color:#5F586C}
   footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -214,31 +247,31 @@
     <p class="body lede t-en" lang="en">I'm an AI PhD student at the University of Edinburgh, co-advised by
       <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a> (Edinburgh) and
       <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a> (Stanford).
-      I'm currently an Anthropic Research Fellow.</p>
+      I'm currently an Anthropic Research Fellow. My recent work is on <span class="hl">reward hacking and model
+      exploitation</span> in RL.</p>
 
-    <p class="body t-en" lang="en">Previously, I studied math (BS) and CS/AI (MS) at Stanford where I was
-      fortunate to work with many amazing mentors including
+    <p class="body t-en" lang="en">Previously, I studied math (BS) and CS/AI (MS) at Stanford, where I worked with
       <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>,
       <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a>, and
       <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a>. I also worked
-      concurrently as an economic consultant with Nobel laureate
+      as an economic consultant with Nobel laureate
       <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> at
       Auctionomics.</p>
 
-    <p class="body t-en" lang="en"><em>I'm broadly interested in alignment and physical AI (RL, robotics, game theory).</em></p>
+    <p class="body tag t-en" lang="en"><em>I'm broadly interested in alignment and physical AI (RL, robotics, game theory).</em></p>
 
     <p class="body lede t-zh" lang="zh-Hans">我是爱丁堡大学人工智能方向的博士生，由
       <a href="https://homepages.inf.ed.ac.uk/sramamoo/" rel="noopener">Ram Ramamoorthy</a>（爱丁堡）与
-      <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a>（斯坦福）联合指导，目前也是 Anthropic Research Fellow。</p>
+      <a href="https://mykel.kochenderfer.com/" rel="noopener">Mykel Kochenderfer</a>（斯坦福）联合指导，目前也是 Anthropic Research Fellow。我近期的工作集中在强化学习中的<span class="hl">奖励黑客（reward hacking）与模型利用（model exploitation）</span>问题。</p>
 
-    <p class="body t-zh" lang="zh-Hans">此前我在斯坦福取得数学学士与计算机科学／人工智能硕士学位，有幸受教于
+    <p class="body t-zh" lang="zh-Hans">此前我在斯坦福取得数学学士与计算机科学／人工智能硕士学位，期间曾与
       <a href="https://hastie.su.domains/" rel="noopener">Trevor Hastie</a>、
       <a href="https://ai.stanford.edu/~cbfinn/" rel="noopener">Chelsea Finn</a> 与
-      <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a> 等多位老师。同期我还在
+      <a href="https://cs.stanford.edu/people/ebrun/" rel="noopener">Emma Brunskill</a> 合作。我还在
       Auctionomics 担任经济顾问，与诺贝尔经济学奖得主
       <a href="https://milgrom.people.stanford.edu/" rel="noopener">Paul Milgrom</a> 共事。</p>
 
-    <p class="body t-zh" lang="zh-Hans"><em>我的研究兴趣主要在人工智能对齐与物理AI（强化学习、机器人学、博弈论）。</em></p>
+    <p class="body tag t-zh" lang="zh-Hans"><em>我的研究兴趣主要在人工智能对齐与物理AI（强化学习、机器人学、博弈论）。</em></p>
 
     <ul class="links">
       <li><a class="chip" id="mail" href="#"><svg class="ico" data-icon="mail" aria-hidden="true"></svg><span class="t-en" lang="en">Email</span><span class="t-zh" lang="zh-Hans">邮箱</span></a></li>
@@ -251,87 +284,81 @@
     <section>
       <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Research</span><span class="t-zh" lang="zh-Hans">研究</span></h2>
       <ul>
-        <li><span class="date">2026</span><span><span class="title">A Bird's-Eye View of Iterative Reward Design</span>
+        <li><a class="thumb" href="https://arxiv.org/abs/2610.04364" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/bird.html" scrolling="no" loading="lazy" tabindex="-1" title="Reward design loop: the reward code is rewritten and a robot arm retries a button press"></iframe></a>
+          <span class="title"><a href="https://arxiv.org/abs/2610.04364" rel="noopener">A Bird's-Eye View of Iterative Reward Design</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Lauren Robson*, Linda Petrini,
             Shengrui Lyu, Kamal Ndousse</span>
-          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
-          <a href="https://arxiv.org/abs/2610.04364" rel="noopener">arXiv</a></span></span></li>
+          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> <span class="yr">2026</span> · <a href="https://arxiv.org/abs/2610.04364" rel="noopener">arXiv</a> · <a href="https://github.com/safety-research/bird" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a></span></li>
 
-        <li><span class="date again">2026</span><span><span class="title">Imperfect World Models are Exploitable</span>
+        <li><a class="thumb" href="https://arxiv.org/abs/2605.15960" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/imperfect-wm.html" scrolling="no" loading="lazy" tabindex="-1" title="World model versus real environment"></iframe></a>
+          <span class="title"><a href="https://arxiv.org/abs/2605.15960" rel="noopener">Imperfect World Models are Exploitable</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Esmeralda S. Whitammer,
             David Abel, Mykel J. Kochenderfer, Subramanian Ramamoorthy</span>
-          <span class="meta"><span class="venue">NeurIPS</span> ·
-          <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> ·
-          <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">NeurIPS</span> <span class="yr">2026</span> · <a href="https://arxiv.org/abs/2605.15960" rel="noopener">arXiv</a> · <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/wm_theory_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></li>
 
-        <li><span class="date again">2026</span><span><span class="title">RENEW: Towards Learning World Models and Repairing Model Exploitation from Preferences</span>
+        <li><a class="thumb" href="https://arxiv.org/abs/2607.14180" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/renew.html" scrolling="no" loading="lazy" tabindex="-1" title="Repairing a world model with preferences"></iframe></a>
+          <span class="title"><a href="https://arxiv.org/abs/2607.14180" rel="noopener">RENEW: Towards Learning World Models and Repairing Model Exploitation from Preferences</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer,
             Subramanian Ramamoorthy</span>
-          <span class="meta"><span class="venue">Finding the Frame Workshop, RLC</span> ·
-          <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a> ·
-          <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/renew_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">Finding the Frame Workshop, RLC</span> <span class="yr">2026</span> · <a href="https://arxiv.org/abs/2607.14180" rel="noopener">arXiv</a> · <a href="https://github.com/FlyingWorkshop/RENEW" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> · <a href="https://logan-mondal-bhamidipaty.com/assets/pdfs/renew_poster.pdf" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></li>
 
-        <li><span class="date">2025</span><span><span class="title">Repairing Reward Functions with Feedback to Mitigate Reward Hacking</span>
+        <li><a class="thumb" href="https://arxiv.org/abs/2510.13036" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/repairing-rewards.html" scrolling="no" loading="lazy" tabindex="-1" title="Traffic on-ramp, proxy reward versus repaired reward"></iframe></a>
+          <span class="title"><a href="https://arxiv.org/abs/2510.13036" rel="noopener">Repairing Reward Functions with Feedback to Mitigate Reward Hacking</a></span>
           <span class="authors">Stephane Hatgis-Kessell, <span class="me">Logan Mondal Bhamidipaty</span>,
             Emma Brunskill</span>
-          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> ·
-          <a href="https://arxiv.org/abs/2510.13036" rel="noopener">arXiv</a></span></span></li>
+          <span class="meta"><span class="venue"><span class="t-en" lang="en">Preprint</span><span class="t-zh" lang="zh-Hans">预印本</span></span> <span class="yr">2025</span> · <a href="https://arxiv.org/abs/2510.13036" rel="noopener">arXiv</a></span></li>
 
-        <li><span class="date">2024</span><span><span class="title">Learning to Explore in POMDPs with Informational Rewards</span>
+        <li><a class="thumb" href="https://proceedings.mlr.press/v235/xie24a.html" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/pomdp-explore.html" scrolling="no" loading="lazy" tabindex="-1" title="Tiger Door gridworld: read the map, then go to the goal"></iframe></a>
+          <span class="title"><a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener">Learning to Explore in POMDPs with Informational Rewards</a></span>
           <span class="authors">Annie Xie*, <span class="me">Logan Mondal Bhamidipaty</span>*, Evan Zheran Liu,
             Joey Hong, Sergey Levine, Chelsea Finn</span>
-          <span class="meta"><span class="venue">ICML</span> ·
-          <a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-          <a href="https://logan-mondal-bhamidipaty.com/assets/images/probe_poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">ICML</span> <span class="yr">2024</span> · <a href="https://proceedings.mlr.press/v235/xie24a.html" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> · <a href="https://logan-mondal-bhamidipaty.com/assets/images/probe_poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></li>
 
-        <li><span class="date">2023</span><span><span class="title">DynaDojo: An Extensible Platform for Benchmarking Scaling in Dynamical System Identification</span>
+        <li><a class="thumb" href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/dynadojo.html" scrolling="no" loading="lazy" tabindex="-1" title="Lorenz system, truth versus model"></iframe></a>
+          <span class="title"><a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener">DynaDojo: An Extensible Platform for Benchmarking Scaling in Dynamical System Identification</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>*, Tommy Bruzzese*, Caryn Tran*,
             Rami Mrad, Max S. Kanwal</span>
-          <span class="meta"><span class="venue">NeurIPS</span> ·
-          <a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-          <a href="https://github.com/DynaDojo/dynadojo" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-          <a href="https://logan-mondal-bhamidipaty.com/assets/images/dynadojo-poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">NeurIPS</span> <span class="yr">2023</span> · <a href="https://proceedings.neurips.cc/paper_files/paper/2023/file/32093649cbbcff773d9a991d8c30a7fe-Paper-Datasets_and_Benchmarks.pdf" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> · <a href="https://github.com/DynaDojo/dynadojo" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> · <a href="https://logan-mondal-bhamidipaty.com/assets/images/dynadojo-poster.png" rel="noopener"><span class="t-en" lang="en">poster</span><span class="t-zh" lang="zh-Hans">海报</span></a></span></li>
       </ul>
     </section>
 
     <section>
       <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Software</span><span class="t-zh" lang="zh-Hans">软件</span></h2>
       <ul>
-        <li><span class="date">2025</span><span><span class="title">CompressedBeliefMDPs.jl: A Julia Package for Solving Large POMDPs with Belief Compression</span>
+        <li><a class="thumb" href="https://joss.theoj.org/papers/10.21105/joss.07346" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/cbmdp.html" scrolling="no" loading="lazy" tabindex="-1" title="A robot's belief over a corridor, compressed to two values"></iframe></a>
+          <span class="title"><a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener">CompressedBeliefMDPs.jl: A Julia Package for Solving Large POMDPs with Belief Compression</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer</span>
-          <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
-          <a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-          <a href="https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-          <a href="https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">Journal of Open Source Software (JOSS)</span> <span class="yr">2025</span> · <a href="https://joss.theoj.org/papers/10.21105/joss.07346" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> · <a href="https://github.com/JuliaPOMDP/CompressedBeliefMDPs.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> · <a href="https://juliapomdp.github.io/CompressedBeliefMDPs.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></li>
 
-        <li><span class="date again">2025</span><span><span class="title">ExpFamilyPCA.jl: A Julia Package for Exponential Family Principal Component Analysis</span>
+        <li><a class="thumb" href="https://joss.theoj.org/papers/10.21105/joss.07403" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/epca.html" scrolling="no" loading="lazy" tabindex="-1" title="EPCA versus PCA on curved data"></iframe></a>
+          <span class="title"><a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener">ExpFamilyPCA.jl: A Julia Package for Exponential Family Principal Component Analysis</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Mykel J. Kochenderfer, Trevor Hastie</span>
-          <span class="meta"><span class="venue">Journal of Open Source Software (JOSS)</span> ·
-          <a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> ·
-          <a href="https://github.com/sisl/ExpFamilyPCA.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> ·
-          <a href="https://sisl.github.io/ExpFamilyPCA.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></span></li>
+          <span class="meta"><span class="venue pub">Journal of Open Source Software (JOSS)</span> <span class="yr">2025</span> · <a href="https://joss.theoj.org/papers/10.21105/joss.07403" rel="noopener"><span class="t-en" lang="en">paper</span><span class="t-zh" lang="zh-Hans">论文</span></a> · <a href="https://github.com/sisl/ExpFamilyPCA.jl" rel="noopener"><span class="t-en" lang="en">code</span><span class="t-zh" lang="zh-Hans">代码</span></a> · <a href="https://sisl.github.io/ExpFamilyPCA.jl/dev/" rel="noopener"><span class="t-en" lang="en">docs</span><span class="t-zh" lang="zh-Hans">文档</span></a></span></li>
       </ul>
     </section>
 
     <section>
       <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Economics</span><span class="t-zh" lang="zh-Hans">经济学</span></h2>
       <ul>
-        <li><span class="date">2026</span><span><span class="title">Estimating Rich Product Space Demand Models with Double Machine Learning</span>
+        <li><a class="thumb" href="https://drive.google.com/file/d/1F72Qm_VSzrr0ClD8NCojXLfMVsUMY8rZ/view" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/econ-dml.html" scrolling="no" loading="lazy" tabindex="-1" title="Double machine learning, partialling out"></iframe></a>
+          <span class="title"><a href="https://drive.google.com/file/d/1F72Qm_VSzrr0ClD8NCojXLfMVsUMY8rZ/view" rel="noopener">Estimating Rich Product Space Demand Models with Double Machine Learning</a></span>
           <span class="authors">Joshua A. Gross, <span class="me">Logan Mondal Bhamidipaty</span></span>
-          <span class="meta"><span class="venue"><span class="t-en" lang="en">Working paper</span><span class="t-zh" lang="zh-Hans">工作论文</span></span> ·
-          <a href="https://drive.google.com/file/d/1F72Qm_VSzrr0ClD8NCojXLfMVsUMY8rZ/view" rel="noopener"><span class="t-en" lang="en">draft</span><span class="t-zh" lang="zh-Hans">草稿</span></a></span></span></li>
+          <span class="meta"><span class="venue"><span class="t-en" lang="en">Working paper</span><span class="t-zh" lang="zh-Hans">工作论文</span></span> <span class="yr">2026</span> · <a href="https://drive.google.com/file/d/1F72Qm_VSzrr0ClD8NCojXLfMVsUMY8rZ/view" rel="noopener"><span class="t-en" lang="en">draft</span><span class="t-zh" lang="zh-Hans">草稿</span></a></span></li>
       </ul>
     </section>
 
     <section>
       <h2><svg class="ico" data-icon="spark" aria-hidden="true"></svg><span class="t-en" lang="en">Teaching</span><span class="t-zh" lang="zh-Hans">教学</span></h2>
       <ul>
-        <li><span class="date">2024</span><span><span class="title">Algorithmic Game Theory Course Reader</span>
+        <li><a class="thumb" href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/agt-reader.html" scrolling="no" loading="lazy" tabindex="-1" title="Intersection game with a stop light"></iframe></a>
+          <span class="title"><a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener">Algorithmic Game Theory Course Reader</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Eric Gao, Aviad Rubinstein</span>
-          <span class="meta"><span class="venue">Stanford CS 269I</span> · <a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener"><span class="t-en" lang="en">reader</span><span class="t-zh" lang="zh-Hans">讲义</span></a></span></span></li>
-        <li><span class="date">2023</span><span><span class="title">Market Design Course Reader</span>
+          <span class="meta"><span class="venue">Stanford CS 269I</span> <span class="yr">2024</span> · <a href="https://flyingworkshop.github.io/incentives-in-computer-science/intro.html" rel="noopener"><span class="t-en" lang="en">reader</span><span class="t-zh" lang="zh-Hans">讲义</span></a></span></li>
+
+        <li><a class="thumb" href="https://flyingworkshop.github.io/market-design/intro.html" tabindex="-1" aria-hidden="true"><iframe src="./assets/thumbs/market-design.html" scrolling="no" loading="lazy" tabindex="-1" title="Deferred acceptance matching"></iframe></a>
+          <span class="title"><a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener">Market Design Course Reader</a></span>
           <span class="authors"><span class="me">Logan Mondal Bhamidipaty</span>, Paul Milgrom</span>
-          <span class="meta"><span class="venue">Stanford ECON 136</span> · <a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">reader</span><span class="t-zh" lang="zh-Hans">讲义</span></a></span></span></li>
+          <span class="meta"><span class="venue">Stanford ECON 136</span> <span class="yr">2023</span> · <a href="https://flyingworkshop.github.io/market-design/intro.html" rel="noopener"><span class="t-en" lang="en">reader</span><span class="t-zh" lang="zh-Hans">讲义</span></a></span></li>
       </ul>
     </section>
   </div>
@@ -1790,17 +1817,45 @@
   /* ============================================================== BOOT */
   var lt=0;
   function scheduleLayout(){clearTimeout(lt);lt=setTimeout(layout,120);}
-  var lastW=0;
+  var lastW=0,lastH=0;
   window.addEventListener("resize",function(){
-    /* phones fire resize when the URL bar slides; only re-lay on a width change */
-    if(hero.clientWidth!==lastW){lastW=hero.clientWidth;scheduleLayout();}
+    /* phones fire resize when the URL bar slides, but that leaves the hero's box alone;
+       re-lay only when the hero itself changes size */
+    var w=hero.clientWidth,h=hero.clientHeight;
+    if(w!==lastW||h!==lastH){lastW=w;lastH=h;scheduleLayout();}
   });
   applyLang();
   syncButtons();
-  lastW=hero.clientWidth;
+  lastW=hero.clientWidth;lastH=hero.clientHeight;
   layout();
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(layout);
   start();
+})();
+</script>
+<script>
+/* thumbnails only animate while on screen: each is a same-origin page, so its
+   requestAnimationFrame is held while the row is out of view and released when it returns */
+(function(){
+  var frames=document.querySelectorAll(".thumb iframe");
+  if(!frames.length||!("IntersectionObserver" in window)) return;
+  function arm(f){
+    var w;try{w=f.contentWindow;if(!w||!w.document||w.__held) return;}catch(e){return;}
+    var real=w.requestAnimationFrame.bind(w),cancel=w.cancelAnimationFrame.bind(w),held={},n=0;
+    w.__held=held;
+    /* a held request gets a negative id, so the page can still cancel it */
+    w.requestAnimationFrame=function(cb){if(f.__on) return real(cb);held[--n]=cb;return n;};
+    w.cancelAnimationFrame=function(id){if(id<0) delete held[id];else cancel(id);};
+    f.__go=function(){var h=held;held=w.__held={};for(var k in h) real(h[k]);};
+  }
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){var f=e.target;f.__on=e.isIntersecting;if(f.__on&&f.__go) f.__go();});
+  },{rootMargin:"120px 0px"});
+  frames.forEach(function(f){
+    f.__on=true;                                             /* run until told otherwise, so nothing freezes if the observer never fires */
+    f.addEventListener("load",function(){arm(f);});
+    try{if(f.contentDocument&&f.contentDocument.readyState==="complete"&&f.contentWindow.location.href!=="about:blank") arm(f);}catch(e){}
+    io.observe(f);
+  });
 })();
 </script>
 </body>

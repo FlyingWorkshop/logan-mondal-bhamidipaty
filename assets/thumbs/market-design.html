@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deferred acceptance</title>
+<style>
+html,body{margin:0;height:100%;background:#16121F;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges}
+</style></head><body>
+<canvas id="c" role="img" aria-label="Deferred acceptance: three robots head for their favourite charging docks; a dock holds the one it prefers and bumps the rest, the bumped robots try their next choice, and everyone ends up docked in a stable matching"></canvas>
+<script>
+/* Deferred acceptance (Algorithm 1, Matching Theory chapter of the Market Design reader):
+   proposers go to their top remaining choice, each receiver holds its favourite and rejects
+   the rest, rejected proposers move down their list, repeat until nobody is rejected; the
+   result is a stable matching (Theorem 1). Robots and docks are a metaphor (the reader uses
+   men/women and students/schools). Preferences are illustrative; the run is computed below. */
+const W=120,H=90;
+const P={night:[22,18,31],floor:[31,25,42],hi:[44,36,60],bone:[238,231,218],sh:[176,168,182],text:[201,194,184],muted:[142,135,154],dim:[70,60,84],
+  acc:[242,162,92],soft:[248,211,160],rej:[232,86,76],dark:[14,11,20],vis:[38,30,52]};
+const mix=(a,b,f)=>[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f];
+const RC=[[242,162,92],[104,206,192],[188,144,242]];
+const SH=RC.map(c=>mix(c,[14,11,20],.38)),HL=RC.map(c=>mix(c,[255,250,240],.5));
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const lo=document.createElement('canvas');lo.width=W;lo.height=H;const lx=lo.getContext('2d');
+const img=lx.createImageData(W,H),D=img.data;
+function px(x,y,c){x|=0;y|=0;if(x<0||y<0||x>=W||y>=H)return;const i=(y*W+x)*4;D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255}
+function rect(x,y,w,h,c){for(let j=0;j<h;j++)for(let i=0;i<w;i++)px(x+i,y+j,c)}
+const ease=u=>{u=u<0?0:u>1?1:u;return u<.5?2*u*u:1-2*(1-u)*(1-u)};
+
+// ---- preferences and the deferred-acceptance run ----
+const RP=[[0,1,2],[0,1,2],[1,2,0]];      // robot r's docks, best first
+const DR=[[0,1,2],[2,0,1],[0,1,2]];      // DR[d][r] = rank of robot r at dock d (0 = best)
+const ROW=[25,47,69],HX=5,DX=104,PX=DX-12,FX=DX-13,WX=40;
+const tracks=[[],[],[]],cur=ROW.map(y=>[HX,y]),rejects=[],judges=[],dockEv=[[],[],[]];
+function go(r,t0,t1,x,y,m){tracks[r].push({t0,t1,x0:cur[r][0],y0:cur[r][1],x1:x,y1:y,m});cur[r]=[x,y]}
+let held=[-1,-1,-1],nxt=[0,0,0],free=[0,1,2],S=600,lastS=S;const RD=2000;
+while(free.length){
+  const by={};free.forEach(r=>{const d=RP[r][nxt[r]++];(by[d]=by[d]||[]).push(r)});free=[];
+  for(const k in by){const d=+k,ps=by[d],y=ROW[d];
+    if(held[d]<0&&ps.length===1){const r=ps[0];go(r,S,S+1000,PX,y,'roll');held[d]=r;dockEv[d].push({t:S+1000,h:r,st:'tent'});continue}
+    const cand=ps.slice(),spots=[y-7,y+7];let si=0;
+    if(held[d]>=0){const h=held[d];go(h,S+300,S+650,FX,spots[si++],'slide');cand.unshift(h);dockEv[d].push({t:S+300,h:-1,st:'judge'})}
+    else dockEv[d].push({t:S+1000,h:-1,st:'judge'});
+    ps.forEach(r=>go(r,S,S+1000,FX,spots[si++],'roll'));
+    cand.sort((a,b)=>DR[d][a]-DR[d][b]);
+    const w=cand[0],tD=S+1300;judges.push({t:tD,d});
+    go(w,tD+120,tD+420,PX,y,'slide');held[d]=w;dockEv[d].push({t:tD+420,h:w,st:'tent'});
+    cand.slice(1).forEach(r=>{rejects.push({t:tD,r});go(r,tD+120,tD+650,WX,cur[r][1],'hop');free.push(r)});
+  }
+  lastS=S;S+=RD;
+}
+// stability check: no robot and dock prefer each other to their partners
+{const mate=[];held.forEach((r,d)=>mate[r]=d);let ok=true;
+ for(let r=0;r<3;r++)for(let d=0;d<3;d++)if(RP[r].indexOf(d)<RP[r].indexOf(mate[r])&&DR[d][r]<DR[d][held[d]])ok=false;
+ void ok}
+const FIN=lastS+1300,T=FIN+2700;
+held.forEach((h,d)=>dockEv[d].push({t:FIN,h,st:'final'}));
+
+function rpos(r,t){let x=HX,y=ROW[r],m=null,u=0;
+  for(const s of tracks[r]){if(t>=s.t1){x=s.x1;y=s.y1;continue}
+    if(t>=s.t0){u=(t-s.t0)/(s.t1-s.t0);const e=s.m==='hop'?1-(1-u)*(1-u):ease(u);x=s.x0+(s.x1-s.x0)*e;y=s.y0+(s.y1-s.y0)*e;m=s.m}break}
+  return {x,y,m,u}}
+function dockState(d,t){let s={h:-1,st:'none',t:0};for(const e of dockEv[d])if(e.t<=t)s=e;return s}
+
+// ---- sprites ----
+const BOT=[
+".....c.....",
+".....s.....",
+"..bbbbbbb..",
+".bhbbbbbbbs",
+".bkkkkkkkbs",
+".bkckkkckbs",
+".bkkkkkkkbs",
+"..sssssss..",
+"...bbbbb...",
+"sbbbbbbbbbs",
+"s.bbcccbs.s",
+"..bbbbbbs..",
+"..wwwwwww..",
+"..w.w.w.w.."];
+const BOLT=["..##",".##.","####",".##.","##..","#..."];
+const G={S:'01111100001000001110000010000111110',T:'11111001000010000100001000010000100',A:'01110100011000111111100011000110001',
+  B:'11110100011000111110100011000111110',L:'10000100001000010000100001000011111',E:'11111100001000011110100001000011111'};
+
+function robot(r,t){
+  const p=rpos(r,t);let x=Math.round(p.x),y=Math.round(p.y);
+  if(p.m==='hop')y-=Math.round(Math.sin(Math.PI*p.u)*6);
+  const moving=p.m==='roll'&&p.u<.97;
+  if(moving)y-=((t/70|0)%2);
+  if(t>=FIN){const u=((t-FIN-250-r*90)%700)/260;if(t>FIN+250+r*90&&t<FIN+250+r*90+1400&&u<1)y-=Math.round(Math.sin(Math.PI*u)*4)}
+  let rj=null;for(const e of rejects)if(e.r===r&&t>=e.t&&t<e.t+1100)rj=e;
+  const flash=rj&&t-rj.t<520&&((t-rj.t)/90|0)%2===0;
+  const col=RC[r];
+  const top=y-7,wf=(t/90|0)%2;
+  BOT.forEach((row,j)=>{for(let i=0;i<11;i++){let ch=row[i];
+    if(j===13&&moving&&wf)ch=row[i]==='w'?'.':(i>=2&&i<=8?'w':'.');
+    let c=null;
+    if(ch==='b')c=col;else if(ch==='s')c=SH[r];else if(ch==='h')c=HL[r];else if(ch==='k')c=P.vis;else if(ch==='w')c=P.muted;else if(ch==='c')c=P.bone;
+    if(c&&flash&&ch!=='k'&&ch!=='c')c=ch==='s'?[150,52,46]:P.rej;
+    if(c)px(x+i,top+j,c)}});
+  if(rj&&t-rj.t<1100){rect(x+2,top+4,7,3,P.vis);for(const ex of [2,6])for(let k=0;k<3;k++){px(x+ex+k,top+4+k,P.rej);px(x+ex+2-k,top+4+k,P.rej)}}
+}
+function trail(r,t){
+  let pp=null;
+  for(let a=900;a>=0;a-=20){const tt=t-a;if(tt<0){pp=null;continue}const q=rpos(r,tt);
+    if(!q.m||q.m==='slide'){pp=null;continue}
+    const x=Math.round(q.x)+5,y=Math.round(q.y)+6,c=mix(RC[r],P.night,Math.min(1,a/900)*.85+.05);
+    if(pp){const n=Math.max(Math.abs(x-pp[0]),Math.abs(y-pp[1]));for(let i=1;i<=n;i++){const xx=Math.round(pp[0]+(x-pp[0])*i/n),yy=Math.round(pp[1]+(y-pp[1])*i/n);px(xx,yy,c);px(xx,yy+1,mix(c,P.night,.5))}}
+    pp=[x,y]}
+}
+function dock(d,t){
+  const s=dockState(d,t),y=ROW[d],x=DX,h=s.h;
+  rect(x,y-8,12,16,P.muted);rect(x+1,y-7,10,14,P.hi);rect(x+10,y-7,1,14,P.vis);rect(x-1,y+8,14,1,P.dim);
+  const col=h>=0?RC[h]:P.dim;
+  let lamp=P.dim;
+  if(s.st==='judge')lamp=((t/70|0)%2)?P.bone:P.dim;
+  else if(s.st==='tent')lamp=((t/260|0)%2)?col:mix(col,P.hi,.6);
+  else if(s.st==='final'){lamp=col;const g=mix(col,P.night,.55);rect(x+2,y-12,8,1,g);px(x+1,y-11,g);px(x+10,y-11,g)}
+  rect(x+3,y-11,6,3,lamp);rect(x+5,y-9,2,1,P.muted);
+  rect(x+3,y-5,6,7,P.dark);
+  if(h>=0){const bc=s.st==='final'?col:mix(col,P.dark,.45);BOLT.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch==='#')px(x+4+i,y-5+j,bc)}))}
+  rect(x+3,y+3,6,2,P.dark);
+  let f=0;if(s.st==='tent')f=2;if(s.st==='final')f=2+Math.round(4*Math.min(1,(t-FIN)/900));
+  if(h>=0)rect(x+3,y+3,f,2,s.st==='final'?P.soft:mix(col,P.dark,.4));
+  rect(x-1,y-2,1,4,h>=0&&s.st!=='judge'?col:P.dark);
+  for(const j of judges)if(j.d===d&&t>=j.t&&t<j.t+260){const a=(t-j.t)/65|0;
+    for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){px(x+6+dx*(9+a),y+dy*(8+a),P.soft);px(x+6+dx*(8+a),y+dy*(7+a),P.bone)}}
+}
+function title(t){
+  if(t<FIN)return;const s='STABLE',x0=9;
+  for(let i=0;i<6;i++){const a=t-FIN-i*70;if(a<0)continue;const u=Math.min(1,a/320);
+    const yy=Math.round(40-(1-u)*(1-u)*16+(u<1?Math.sin(Math.PI*u)*2:0)),g=G[s[i]],x=x0+i*12;
+    for(let j=0;j<7;j++)for(let k=0;k<5;k++)if(g[j*5+k]==='1'){rect(x+k*2+1,yy+j*2+1,2,2,P.dark);rect(x+k*2,yy+j*2,2,2,j<3?P.soft:P.acc)}}
+  const sp=[[5,38],[82,43],[10,57],[78,35]];sp.forEach(([sx,sy],i)=>{const ph=((t-FIN)/140+i*2.3)%6;if(t-FIN>400&&ph<2){px(sx,sy,P.bone);if(ph<1){px(sx-1,sy,P.soft);px(sx+1,sy,P.soft);px(sx,sy-1,P.soft);px(sx,sy+1,P.soft)}}})
+}
+function scene(t){
+  for(let i=0;i<D.length;i+=4){D[i]=22;D[i+1]=18;D[i+2]=31;D[i+3]=255}
+  for(let y=13;y<90;y+=11)for(let x=3+(y%2)*4;x<W;x+=8)px(x,y,P.floor);
+  for(let r=0;r<3;r++){rect(HX,ROW[r]+7,11,1,P.floor)}
+  for(let r=0;r<3;r++)trail(r,t);
+  for(let d=0;d<3;d++)dock(d,t);
+  const order=[0,1,2].sort((a,b)=>rpos(a,t).y-rpos(b,t).y);
+  for(const r of order)robot(r,t);
+  title(t);
+}
+function frame(t){
+  t=((t%T)+T)%T;let fade=0,st=t;
+  if(t>=T-800&&t<T-400)fade=(t-(T-800))/400;else if(t>=T-400){st=0;fade=(T-t)/400}
+  scene(st);
+  if(fade>0)for(let i=0;i<D.length;i+=4){D[i]+=(22-D[i])*fade;D[i+1]+=(18-D[i+1])*fade;D[i+2]+=(31-D[i+2])*fade}
+  lx.putImageData(img,0,0);
+  let sx=0;for(const e of rejects)if(st>=e.t&&st<e.t+220)sx=((st/45|0)%2)?1:-1;
+  const w=cv.width,h=cv.height,s=Math.max(1,Math.floor(Math.min(w/W,h/H)));
+  ctx.fillStyle='#16121F';ctx.fillRect(0,0,w,h);ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(lo,(((w-W*s)/2)|0)+sx*s,((h-H*s)/2)|0,W*s,H*s);
+}
+function size(){const d=window.devicePixelRatio||1;cv.width=Math.round(innerWidth*d);cv.height=Math.round(innerHeight*d)}
+let last=FIN+1600,prev=-1e9,t0=null,raf=0;
+function hashT(){const m=/t=([\d.]+)/.exec(location.hash);return m?parseFloat(m[1])*1000:null}
+function start(){cancelAnimationFrame(raf);size();const ht=hashT();
+  if(ht!==null){last=ht;frame(last);return}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){last=FIN+1600;frame(last);return}
+  t0=null;const loop=n=>{if(t0===null)t0=n;if(n-prev>=15){prev=n;last=n-t0;frame(last)}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
+addEventListener('resize',()=>{size();frame(last)});addEventListener('hashchange',start);
+start();
+</script></body></html>
